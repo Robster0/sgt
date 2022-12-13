@@ -7,22 +7,14 @@
     <title>Document</title>
 </head>
 <body>
-
     <div class="posts">
         [$loop posts as p]
-            [$loop test as t]
-                <div class="post"> 
-                    <h1>[s]</h1>
-                </div>
-            [/loop]
-        [/loop]
-    </div>
-
-    <div class="comments">
-        [$loop comments as c]
-            <div class="post"> 
-                <h1>[c.content]</h1>
-            </div>
+            [$if test eq dick]
+            <h1>it was equal to dick</h1>
+            [:else]
+            <h1>it was not equal to dick</h1>
+            [/if]
+            <section>wow</section>
         [/loop]
     </div>
 </body>

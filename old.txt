@@ -80,3 +80,18 @@ class HtmlTemplate
 }
 
 const template = new HtmlTemplate('./test.html');
+
+
+        //console.log(currentCommand)
+//
+        //let variables = []
+        //let loops = data.match(/\[\$loop.+?\]((.|\n|\r\n|\r)*?)\[\/loop\]/gm)
+//
+        //console.log("LOOPS")
+        //console.log(loops)
+//
+        //for(let i = 0; i<loops.length; i++) {
+        //    let loopCommand = loops[i].match(/(.*)\[\$loop.+?\]/gm)[0]
+//
+        //    console.log(loopCommand)
+        //}

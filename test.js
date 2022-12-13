@@ -48,10 +48,6 @@ class HtmlTemplate
 
 
         this.#input = {}
-        this.Generate(path, {
-            "posts": [9, 8, 7, 6, 5],
-            "test": "teststring"
-        })
     }
 
 
@@ -180,12 +176,33 @@ class HtmlTemplate
 
 
 
-    #validStatement(statementSeg) {
-        for(let i = 0; i<statementSeg.length; i++) {
-            this.#statement_rules[statementSeg]
+    validStatement(statementSeg) {
+
+        for(let i = 1; i<statementSeg.length; i++) {
+            console.log((i - 1) % 3)
+
+            const v = (i - 1) % 4
+
+            if(v === 3) {
+                console.log(statementSeg[i])
+                console.log(statementSeg[i].toLowerCase())
+                if(this.#statement_rules.extra[statementSeg[i].toLowerCase()]) console.log("TRUE")
+            }
+
+
+
+            //switch(v)
+            //{
+            //    case 0:
+            //    console.log(statementSeg[i])
+            //    case 1: 
+            //    console.log(statementSeg[i])
+            //    case 2: console.log(statementSeg)
+            //}
         }
         
     }
 }
 
-const template = new HtmlTemplate('./test.html');
+
+console.log(new HtmlTemplate().validStatement(['$loop', 'var2', 'eq', 'cock', 'AND', 'var2', '-eq', '"jag', 'heter', 'robin"']))
