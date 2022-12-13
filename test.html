@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+
+    <div class="posts">
+        [$loop posts as p]
+            [$loop test as t]
+                <div class="post"> 
+                    <h1>[s]</h1>
+                </div>
+            [/loop]
+        [/loop]
+    </div>
+
+    <div class="comments">
+        [$loop comments as c]
+            <div class="post"> 
+                <h1>[c.content]</h1>
+            </div>
+        [/loop]
+    </div>
+</body>
+</html>
