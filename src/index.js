@@ -16,7 +16,7 @@ const { isFunction } = require('util');
 class HtmlTemplate
 {
     #input
-
+    #duplicateID
 
     #statement_rules
 
@@ -25,33 +25,25 @@ class HtmlTemplate
     {
 
         this.#statement_rules = {
-            command: {
-                $loop: true,
-                $if: true
-            },
-            condition: {
-                as: true,
-                eq: true,
-                '-eq': true,
-                '>': true,
-                '<': true,
-                '>=': true,
-                '<=': true
-            },
-            extra: {
-                and: true,
-                or: true
-            }
+            'eq': '=== ',
+            '-eq': '!== ',
+            'and': '&& ',
+            'or': '|| ',
 
+            '>': '> ',
+            '<': '< ',
+            '>=': '>= ',
+            '<=': '<= ',
         }
 
 
-
+        
         this.#input = {}
-       this.Generate(path, {
-           "posts": [9, 8, 7, 6, 5],
-            "test": "teststring"
-       })
+        this.#duplicateID = {}
+        this.Generate(path, {
+            "posts": [9, 8, 7, 6, 5],
+             "test": "teststring"
+        })
     }
 
 
@@ -69,12 +61,8 @@ class HtmlTemplate
             let stack = []
             let mode = ''
 
-            let htmlSegment = ''
-            let newHtml = []
+            let newHtml = ''
 
-            let index = 0
-            let test = []
-    
             let statement = ''
 
             let contentSeg = {}
@@ -83,18 +71,25 @@ class HtmlTemplate
             for(let i = 0; i<html.length; i++) {
 
                 if(stack.length === 0 && mode !== 'write')
-                    htmlSegment += html[i]
+                newHtml += html[i]
+                
+                    
             
 
                 //write the curr command
                 if(mode === 'write')
                     statement += html[i]
-                else if(stack.length !== 0)
+                else if(stack.length !== 0) {
                     content += html[i]
+                }
+                    
     
                 
                 if(html[i] === '[' && (html[i + 1] === '$' || html[i + 1] === '/'))
                     mode = 'write'
+
+
+
 
                     
                 if(html[i + 1] === ']') {
@@ -103,50 +98,36 @@ class HtmlTemplate
 
                     const s = stack[stack.length - 1]
 
-                    content += this.#addIndex(index, content[content.length - 1], statement[0])
-                    htmlSegment += this.#addIndex(index, htmlSegment[htmlSegment.length - 1], statement[0])
-
-
-                    if(s)
-                        contentSeg[s] = contentSeg[s] ? contentSeg[s] + content : content
-    
-
-
-    
                     if(statement[0] === '$') {
 
-                        index++
-
-                        let pass = true
-
-                        for(let i = 0; i<stack.length; i++) {
-                            if(stack[i] === statement) {
-                                stack.push(statement + `-#-${Math.random()}`)
-                                pass = false
-                            }
-                        }
+                        if(contentSeg[statement])
+                            statement = statement + `-DUPLICATE-${Math.random().toString().substring(2, 5)}`
                         
-                        if(pass)
-                            stack.push(statement)
+                            
 
-                    } else if(statement[0] === '/') {
+                        content += this.#addIndex(statement, content[content.length - 1], statement[0])
+                        newHtml += this.#addIndex(statement, newHtml[newHtml.length - 1], statement[0])
+
+                        stack.push(statement)
+
+                        //check statement
+                    }
+
+                    if(s) contentSeg[s] = contentSeg[s] ? contentSeg[s] + content : content
+                    
+                    if(statement[0] === '/') {
 
                         //Statement command
                         const sc = statement.split(' ')[0].toLowerCase()
                         //Latest command
                         const lc = s.split(' ')[0].toLowerCase()
 
-                        if(sc.substring(1, sc.length - 1) !== lc.substring(1, lc.length - 1)) throw "invalid closing scope" 
+                        if(sc.substring(1, sc.length - 1) !== lc.substring(1, lc.length - 1)) throw new SyntaxError("invalid closing scope")
     
-                        if(stack.length === 0) throw "invalid syntax"
+                        if(stack.length === 0) throw new SyntaxError("invalid syntax")
 
                         const executedStatement = this.#ExecuteStatement(contentSeg[s].substring(0, contentSeg[s].length - 1), s)
 
-                        //if(!this.#ExecuteStatement(contentSeg[s].substring(0, contentSeg[s].length - 1), s)) throw "invalid statement syntax"
-                        //console.log(contentSeg[s])
-
-                        //console.log()
-    
                         stack.pop()
                     } 
 
@@ -157,11 +138,9 @@ class HtmlTemplate
                 }   
             }
     
-            if(stack.length) throw "invalid syntax" 
+            if(stack.length) throw new SyntaxError("invalid syntax") 
     
-           // console.log(htmlSegment)
-    
-           console.log(htmlSegment)
+           console.log(newHtml)
     
             const keys = Object.keys(contentSeg)
     
@@ -178,25 +157,15 @@ class HtmlTemplate
     }
 
     #ExecuteStatement(content, condition) {
-        const seg = condition.split(' ')
+        const statementSeg = condition.split('-DUPLICATE-')[0].split(' ')
 
-        if(seg.length !== 4) {
-            if(seg[3][0] !== `'` && seg[3][0] !== `"`) return false
-        }
+        if(!this.#validStatement(statementSeg)) return false
 
-
-        console.log(seg)
-
-        console.log(content)
-
-
-        console.log(this.#input)
-
-        switch(seg[0].toLowerCase()) {
+        switch(statementSeg[0].toLowerCase()) {
             case '$if':
                 break
             case '$loop':
-                return this.#Loop(content, seg)
+                return this.#Loop(content, statementSeg)
         }
 
 
@@ -204,10 +173,22 @@ class HtmlTemplate
     }
 
 
-    #Loop(content, statementSeg) {
-         if(this.#validStatement(statementSeg)) return false
+    #Loop(content, [command, variable, as, element]) {
 
+        let iterableVar = Array.isArray(this.#input[variable]) ? this.#input[variable] : Object.keys(this.#input[variable])
 
+        let html = ``
+
+        let valid = [['[', ' '], ['.', ' ', ']']]
+        let mode = false
+
+        console.log(content)
+
+        content.search(element)
+
+        for(let i = 0; i<iterableVar.length; i++) {
+            
+        }
     }
 
 
@@ -244,7 +225,6 @@ class HtmlTemplate
                     isString = false
 
                 const valid = this.#statement_rules[statementSeg[i].toLowerCase()]
-
                 if(valid)
                     script += valid
                 else {
@@ -252,8 +232,7 @@ class HtmlTemplate
                         script += statementSeg[i] + ' '
                     else {
 
-                        //if(this.#statement_rules[statementSeg[i]])
-                        
+
                         script += statementSeg[i][0] === '!' ? '!1 ' : '1 '
                     }
                 }
@@ -275,19 +254,6 @@ class HtmlTemplate
             return index
 
         return ''
-    }
-
-    #duplicate(stack, statement) {
-
-        for(let i = 0; i<stack.length; i++) {
-            if(stack[i] === statement) {
-                stack.push(statement + `-${Math.random().toString().substring(2, 5)}`)
-
-                return stack
-            }
-        }
-        
-        stack.push(statement)
     }
 }
 

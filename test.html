@@ -4,36 +4,19 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>[title]</title>
 </head>
 <body>
     <div class="posts">
-        [$loop posts as p]              
-            [$if test eq dick]
-            <h1>it was equal to dick</h1>
-            [:else]
-            <h1>it was not equal to dick</h1>
-            [/if]
+        [$loop posts as p]      
+            <h1>[p.title]</h1>        
+            <p>[p.content]</p>
 
             [$loop posts as p]
-                <h1>wow</h1>
+                
+               <h1>[p.title]</h1>
 
-                [$if test eq 124]
-                    <section>test is equal to 124</section>
-
-                    <div class="div-124">
-                        damn
-                    </div>
-                [/if]
             [/loop]
-
-            [$loop test as t]
-                <h1>[t]</h1>
-                [$loop wow as w]
-                    <h1>damn</h1>
-                [/loop]
-            [/loop]
-            <section>wow</section>
         [/loop]
     </div>
 
