@@ -281,13 +281,13 @@ class HtmlTemplate
 
         for(let i = 0; i<stack.length; i++) {
             if(stack[i] === statement) {
-                stack.push(statement + `-#-${Math.random()}`)
-                pass = false
+                stack.push(statement + `-${Math.random().toString().substring(2, 5)}`)
+
+                return stack
             }
         }
         
-        if(pass)
-            stack.push(statement)
+        stack.push(statement)
     }
 }
 
