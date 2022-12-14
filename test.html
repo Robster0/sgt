@@ -8,14 +8,40 @@
 </head>
 <body>
     <div class="posts">
-        [$loop posts as p]
+        [$loop posts as p]              
             [$if test eq dick]
             <h1>it was equal to dick</h1>
             [:else]
             <h1>it was not equal to dick</h1>
             [/if]
+
+            [$loop posts as p]
+                <h1>wow</h1>
+
+                [$if test eq 124]
+                    <section>test is equal to 124</section>
+
+                    <div class="div-124">
+                        damn
+                    </div>
+                [/if]
+            [/loop]
+
+            [$loop test as t]
+                <h1>[t]</h1>
+                [$loop wow as w]
+                    <h1>damn</h1>
+                [/loop]
+            [/loop]
             <section>wow</section>
         [/loop]
+    </div>
+
+
+    <div>
+        [$if dick -eq big]
+            <h1>chad</h1>
+        [/if]
     </div>
 </body>
 </html>

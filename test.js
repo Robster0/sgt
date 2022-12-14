@@ -9,7 +9,7 @@ Syntax:
 */
 
 const fs = require('fs');
-const { isFunction } = require('util');
+
 
 
 
@@ -25,29 +25,20 @@ class HtmlTemplate
     {
 
         this.#statement_rules = {
-            command: {
-                $loop: true,
-                $if: true
-            },
-            condition: {
-                as: true,
-                eq: true,
-                '-eq': true,
-                '>': true,
-                '<': true,
-                '>=': true,
-                '<=': true
-            },
-            extra: {
-                and: true,
-                or: true
-            }
+            'eq': '=== ',
+            '-eq': '!== ',
+            'and': '&& ',
+            'or': '|| ',
 
+            '>': '> ',
+            '<': '< ',
+            '>=': '>= ',
+            '<=': '<= ',
         }
 
 
 
-        this.#input = {}
+        this.#input = {'var2': []}
     }
 
 
@@ -178,31 +169,71 @@ class HtmlTemplate
 
     validStatement(statementSeg) {
 
-        for(let i = 1; i<statementSeg.length; i++) {
-            console.log((i - 1) % 3)
+        try
+        {
 
-            const v = (i - 1) % 4
+            //validate loop
+            if(statementSeg[0].toLowerCase() === '$loop') {
 
-            if(v === 3) {
-                console.log(statementSeg[i])
-                console.log(statementSeg[i].toLowerCase())
-                if(this.#statement_rules.extra[statementSeg[i].toLowerCase()]) console.log("TRUE")
+                //if length isn't four, return false
+                if(statementSeg.length !== 4) return false
+                //If variable that will be looped isn't inside the input, return false
+                if(!(statementSeg[1] in this.#input)) return false
+                //If variable that 
+                if(!Array.isArray(this.#input[statementSeg[1]]) && typeof this.#input[statementSeg[1]] !== 'object') return false
+                
+                if(statementSeg[2].toLowerCase() !== 'as') return false
+
+
+                return true
             }
 
+            if(statementSeg[0].toLowerCase() !== '$if') return false
 
+            let script = ''
+            let isString = false
 
-            //switch(v)
-            //{
-            //    case 0:
-            //    console.log(statementSeg[i])
-            //    case 1: 
-            //    console.log(statementSeg[i])
-            //    case 2: console.log(statementSeg)
-            //}
+            for(let i = 1; i<statementSeg.length; i++) {
+
+                if(statementSeg[i][0] === '"') 
+                    isString = true
+                else if(statementSeg[i][statementSeg.length - 1] === '"') 
+                    isString = false
+
+                const valid = this.#statement_rules[statementSeg[i].toLowerCase()]
+
+                if(valid)
+                    script += valid
+                else {
+                    if(isString)
+                        script += statementSeg[i] + ' '
+                    else {
+
+                        //if(this.#statement_rules[statementSeg[i]])
+                        
+                        script += statementSeg[i][0] === '!' ? '!1 ' : '1 '
+                    }
+                        
+                }
+            }
+            console.log(script)
+
+            eval(script) 
+
+            console.log(script)
+
+            return true
         }
+        catch(err) {
+
+            console.log(err)
+            return false
+        }
+
+
         
     }
 }
 
 
-console.log(new HtmlTemplate().validStatement(['$loop', 'var2', 'eq', 'cock', 'AND', 'var2', '-eq', '"jag', 'heter', 'robin"']))
+console.log(new HtmlTemplate().validStatement(['$if', 'var2', 'eq', '123', 'or', 'var1', '-eq', '25']))
