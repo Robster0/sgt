@@ -24,17 +24,7 @@ class HtmlTemplate
     constructor(path)
     {
 
-        this.#statement_rules = {
-            'eq': '=== ',
-            '-eq': '!== ',
-            'and': '&& ',
-            'or': '|| ',
-
-            '>': '> ',
-            '<': '< ',
-            '>=': '>= ',
-            '<=': '<= ',
-        }
+        
 
 
 

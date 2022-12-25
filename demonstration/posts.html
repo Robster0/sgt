@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <title>{title}</title>
+</head>
+<body>
+    <div class="posts">
+        {$loop posts as p}
+            <div class="post">
+                <h1 class="post-user">{p.user}</h1>
+                <h1 class="post-content">{p.content}</h1>
+            </div>
+            <div class="comments">
+                {$loop comments as c}
+                        {$if c.postId EQ p.id}
+                            <div class="comment">
+                                <h1 class="comment-content">user: {c.user}</h1>
+                                <h1 class="comment-content">content: {c.content}</h1>
+                            </div>                      
+                        {/if}
+
+                        
+                {/loop}
+                <h1 class="comment-content">user: {c.user}</h1>
+            </div>
+        {/loop}
+    </div>
+</body>
+</html>

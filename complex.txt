@@ -1,0 +1,143 @@
+            {$if p -eq undefined and p -eq null}
+                <h1>{p.title}</h1>        
+                <p>{p.content}</p>
+            {/if}
+
+            {$if test eq "messi easily the best football player"}
+                 <h1>{messi_statement}</h1>
+            {/if}
+
+
+            {$loop test}
+                <h1>{wow}</h1>
+
+                {$if test2 eq "damn, cool shit"}
+
+                    <h1>WOWOWOWOO!½</h1>
+
+                {/if}
+            {/loop}
+
+
+            <h1>{title}</h1>
+
+
+
+
+    <div class="posts">
+        {$loop posts as p}     
+
+        <div class="post">
+
+            <h1>{p.title}</h1>
+
+            {$if title eq "ROBIN TESTS THE HTML TEMPLATE"}
+                <h1>{messi_statement}</h1>
+            {/if}
+
+
+            {$if p.title eq "first TITLE!"}
+                <h1>DAMN WOWTRWTW</h1>
+            {/if}
+
+            <h2>{p.content}</h2>
+
+        </div>
+
+        {/loop}
+    </div>
+
+    <div class="numbers">
+
+        {$loop numbers as n}
+            <h1>{n}</h1>
+        {/loop}
+    </div>
+
+        <div class="posts">
+        {$loop posts as p}     
+
+        <div class="post">
+
+            <h1>{p.title}</h1>
+
+            {$if title eq "ROBIN TESTS THE HTML TEMPLATE"}
+                <h1>{messi_statement}</h1>
+            {/if}
+
+
+            {$if p.title eq "first TITLE!"}
+                <h1>DAMN WOWTRWTW</h1>
+            {/if}
+
+            <h2>{p.content}</h2>
+
+        </div>
+
+        {/loop}
+    </div>
+
+    <div class="numbers">
+
+        {$loop numbers as n}
+            <h1>{n}</h1>
+        {/loop}
+    </div>
+    
+    <div class="wrapper">
+        {$loop 2d as pipedTwoD}
+            <div class="Segment">
+                {$loop pipedTwoD as value} 
+                    <h1 class='value'>{value}</h1>
+                {/loop}
+            </div>
+        {/loop}
+    </div>
+
+
+     <div class="numbers">
+
+        {$loop numbers as n}
+            <h1>{n}</h1>
+        {/loop}
+    </div>
+
+        <div class="posts">
+        {$loop posts as p}     
+
+        <div class="post">
+
+            <h1>{p.title}</h1>
+
+            {$if title eq "ROBIN TESTS THE HTML TEMPLATE"}
+                <h1>{messi_statement}</h1>
+            {/if}
+
+
+            {$if p.title eq "first TITLE!"}
+                <h1>DAMN WOWTRWTW</h1>
+            {/if}
+
+            <h2>{p.content}</h2>
+
+        </div>
+
+        {/loop}
+    </div>
+
+    <div class="numbers">
+
+        {$loop numbers as n}
+            <h1>{n}</h1>
+        {/loop}
+    </div>
+    
+    <div class="wrapper">
+        {$loop 2d as pipedTwoD}
+            <div class="Segment">
+                {$loop pipedTwoD as value} 
+                    <h1 class='value'>{value}</h1>
+                {/loop}
+            </div>
+        {/loop}
+    </div>

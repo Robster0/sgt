@@ -3,27 +3,34 @@
 Syntax:
 
 
-#: escaped
+$: statement
 
+/: end the statement
+
+":":  else statement 
+
+# (only on variables): escape
+
+(.*?test.*?)}
 
 */
 
 const fs = require('fs');
-const { isFunction } = require('util');
+
+const Validity = require('./validity/validity')
 
 
 
 class HtmlTemplate
 {
     #input
-    #duplicateID
 
     #statement_rules
+    #scopeVariables
 
 
     constructor(path)
     {
-
         this.#statement_rules = {
             'eq': '=== ',
             '-eq': '!== ',
@@ -35,226 +42,313 @@ class HtmlTemplate
             '>=': '>= ',
             '<=': '<= ',
         }
-
-
-        
-        this.#input = {}
-        this.#duplicateID = {}
-        this.Generate(path, {
-            "posts": [9, 8, 7, 6, 5],
-             "test": "teststring"
-        })
     }
 
+    Render(path, input) {
+        //Set the variables
+        this.#input = input
 
-    
+        //read the html file
+        const html = fs.readFileSync(path).toString('utf-8')
 
 
-    Generate(path, input) {
+        //Start the Scan
+        return this.#Scan(html)        
+    }
+
+    #Scan(html, stack = [], htmlSegments = {}, startIndex = 0) {
         try
         {
-            this.#input = input
 
-            let html = fs.readFileSync('./test.html').toString('utf-8')
-
-
-            let stack = []
-            let mode = ''
-
+            //Write: currently writing a statement, scan: currently looking for a statement
+            let mode = 'scan'
             let newHtml = ''
-
             let statement = ''
-
-            let contentSeg = {}
             let content = ''
-
-            for(let i = 0; i<html.length; i++) {
-
-                if(stack.length === 0 && mode !== 'write')
-                newHtml += html[i]
-                
-                    
             
 
-                //write the curr command
-                if(mode === 'write')
-                    statement += html[i]
-                else if(stack.length !== 0) {
-                    content += html[i]
-                }
-                    
-    
-                
-                if(html[i] === '[' && (html[i + 1] === '$' || html[i + 1] === '/'))
+
+            for(let i = startIndex; i<html.length; i++) 
+            {
+                if(html[i] === '{') {
                     mode = 'write'
+                } 
+                else if(html[i] === '}') {
+                    mode = 'scan'
 
 
-
-
+                    const command = statement[0]
+                    const notCommand = command !== '$' && command !== '/' && command !== ':'
                     
-                if(html[i + 1] === ']') {
+                    const latest = stack[stack.length - 1]
 
-                    mode = 'check'
+                    //If the statement is just a variable
+                    if(notCommand && statement in this.#input)
+                        content += this.#input[statement]             
+                    else if(notCommand) {
+                        content += `{${statement}}`
+                    }
 
-                    const s = stack[stack.length - 1]
+                    //not inside a scope
+                    if(stack.length === 0)
+                        newHtml += content  
+                           
 
-                    if(statement[0] === '$') {
+                    if(latest) {
+                        if(!htmlSegments['content'])
+                            htmlSegments['content'] = ['']
 
-                        if(contentSeg[statement])
-                            statement = statement + `-DUPLICATE-${Math.random().toString().substring(2, 5)}`
+                        htmlSegments['content'][htmlSegments['content'].length - 1] += content    
+                    }
+                    
                         
-                            
-
-                        content += this.#addIndex(statement, content[content.length - 1], statement[0])
-                        newHtml += this.#addIndex(statement, newHtml[newHtml.length - 1], statement[0])
+ 
+                        
+                    //If its a statement
+                    if(command === '$') {
+                        if(htmlSegments[statement])
+                            statement = statement + `-DUPLICATE-${Math.random().toString().substring(2, 5)}`
 
                         stack.push(statement)
 
-                        //check statement
+                        if(htmlSegments['content'])
+                            htmlSegments['content'].push('')
+
+
+                        //if(htmlSegments)
+                        htmlSegments[statement] = {}
+
+                        const childSegments = this.#Scan(html, stack, htmlSegments[statement], i + 1)
+
+                        if(!childSegments) return false
+
+                        const [ newStartIndex, newNewHtml, newStack ] = childSegments
+
+                        i = newStartIndex
+                        newHtml += newNewHtml
+                        stack = newStack
+                    } 
+                    //If its a closing statement
+                    else if (command === '/') {
+                        stack = this.#ValidateScopes(stack, statement)
+
+ 
+                        if(!stack) throw new SyntaxError("Missing or wrong closing statement")
+
+                        if(stack.length === 0) {
+                            const segHTML = this.#ExecuteStatements(htmlSegments, latest)
+                            
+                            if(segHTML) {
+                                newHtml += segHTML
+                                htmlSegments = {}
+                            }        
+                        }
+
+                        const elseStatementOffset = (latest[0] === ':' ? statement.length + 3 : 0)
+
+                        return [i + 1 - elseStatementOffset, newHtml, stack]
+                    } 
+                    else if (command === ':') {
+                        if(htmlSegments[statement])
+                            statement = statement + `-DUPLICATE-${Math.random().toString().substring(2, 5)}`
+
+                        stack.push(statement)
+
+
+                        htmlSegments['else'] = {}
+                        htmlSegments['else'][statement] = {}
+
+                        const childSegments = this.#Scan(html, stack, htmlSegments['else'][statement], i + 1)
+
+                        if(!childSegments) return false
+
+                        const [ newStartIndex, newNewHtml, newStack ] = childSegments
+
+                        i = newStartIndex
+                        newHtml += newNewHtml
+                        stack = newStack
                     }
 
-                    if(s) contentSeg[s] = contentSeg[s] ? contentSeg[s] + content : content
-                    
-                    if(statement[0] === '/') {
-
-                        //Statement command
-                        const sc = statement.split(' ')[0].toLowerCase()
-                        //Latest command
-                        const lc = s.split(' ')[0].toLowerCase()
-
-                        if(sc.substring(1, sc.length - 1) !== lc.substring(1, lc.length - 1)) throw new SyntaxError("invalid closing scope")
-    
-                        if(stack.length === 0) throw new SyntaxError("invalid syntax")
-
-                        const executedStatement = this.#ExecuteStatement(contentSeg[s].substring(0, contentSeg[s].length - 1), s)
-
-                        stack.pop()
-                    } 
-
-
-
-                    content = ''
                     statement = ''
-                }   
+                    content = ''
+
+                } else {
+                    if(mode === 'write')
+                        statement += html[i]
+                    else
+                        content += html[i]
+                }
             }
-    
-            if(stack.length) throw new SyntaxError("invalid syntax") 
-    
-           console.log(newHtml)
-    
-            const keys = Object.keys(contentSeg)
-    
-    
-            for(let i = 0; i<keys.length; i++) {
-                console.log(keys[i], ": ")
-                console.log(contentSeg[keys[i]].substring(1, contentSeg[keys[i]].length - 1))
-            }
+
+            if(stack.length !== 0) throw new SyntaxError("Missing closing scope")
+
+            newHtml += content
+
+            return newHtml
         }
         catch(err) 
         {
             console.log(err)
+            return false
         }   
     }
 
-    #ExecuteStatement(content, condition) {
-        const statementSeg = condition.split('-DUPLICATE-')[0].split(' ')
+    #ExecuteStatements(htmlSegments, statement, variables = {}) {
 
-        if(!this.#validStatement(statementSeg)) return false
+        const statementSeg = statement.split('-DUPLICATE-')[0].split(' ').filter(e => e)
+
+        const value = Validity(statementSeg, this.#input, variables)
+        
+        if(!value) return ''
 
         switch(statementSeg[0].toLowerCase()) {
             case '$if':
-                break
+            case ':else':
+                return this.#If(htmlSegments, value, variables)
             case '$loop':
-                return this.#Loop(content, statementSeg)
+                return this.#Loop(htmlSegments, statementSeg, variables)
         }
-
-
-        return true
-    }
-
-
-    #Loop(content, [command, variable, as, element]) {
-
-        let iterableVar = Array.isArray(this.#input[variable]) ? this.#input[variable] : Object.keys(this.#input[variable])
-
-        let html = ``
-
-        let valid = [['[', ' '], ['.', ' ', ']']]
-        let mode = false
-
-        console.log(content)
-
-        content.search(element)
-
-        for(let i = 0; i<iterableVar.length; i++) {
-            
-        }
-    }
-
-
-
-    #validStatement(statementSeg) {
-        try
-        {
-            //validate loops
-            if(statementSeg[0].toLowerCase() === '$loop') {
-
-                //if length isn't four, return false
-                if(statementSeg.length !== 4) return false
-                //If variable that will be looped isn't inside the input, return false
-                if(!(statementSeg[1] in this.#input)) return false
-                //If variable that 
-                if(!Array.isArray(this.#input[statementSeg[1]]) && typeof this.#input[statementSeg[1]] !== 'object') return false
-                
-                if(statementSeg[2].toLowerCase() !== 'as') return false
-
-
-                return true
-            }
-
-            if(statementSeg[0].toLowerCase() !== '$if') return false
-
-            let script = ''
-            let isString = false
-
-            for(let i = 1; i<statementSeg.length; i++) {
-
-                if(statementSeg[i][0] === '"') 
-                    isString = true
-                else if(statementSeg[i][statementSeg.length - 1] === '"') 
-                    isString = false
-
-                const valid = this.#statement_rules[statementSeg[i].toLowerCase()]
-                if(valid)
-                    script += valid
-                else {
-                    if(isString)
-                        script += statementSeg[i] + ' '
-                    else {
-
-
-                        script += statementSeg[i][0] === '!' ? '!1 ' : '1 '
-                    }
-                }
-            }
-
-            eval(script) 
-
-            return true
-        }
-        catch(err) {
-
-            console.log(err)
-            return false
-        }
-    }
-
-    #addIndex(index, lastChar, isCommand) {
-        if(lastChar === '[' && isCommand === '$')
-            return index
 
         return ''
     }
+
+    #ValidateScopes(stack, command) {
+
+        const latest = stack[stack.length - 1].split(' ')[0]
+
+        switch(command)
+        {
+            case '/if':
+                if(latest !== ':else' && latest !== '$if')
+                    return false
+
+                stack.pop()
+
+                return stack
+            case '/loop':
+                if(latest !== '$loop') 
+                    return false
+                    
+                stack.pop()
+
+                return stack
+            default:
+                return false
+        }  
+    }
+
+
+    //For loops
+    #Loop(htmlSegments, [command, variable, as, pipeVariable], variables) {
+  
+        let html = ''
+
+        let data = variables[variable] ? variables[variable] : this.#input[variable]        
+
+        for(let i = 0; i<data.length; i++) {
+
+            const isObject = typeof data[i] === 'object' && !Array.isArray(data[i]) 
+            
+            if(isObject) {
+                variables = {...variables, ...this.#objectTraversal(data[i], pipeVariable)}
+
+            } else {
+                variables[pipeVariable] = data[i]
+            }
+
+
+            const scannedHtml = this.#childSegments(htmlSegments, variables)
+
+            if(!scannedHtml && scannedHtml !== '') return false
+
+            //Delete this variable since shallow copy won't
+            delete variables[pipeVariable]
+            
+            html += scannedHtml
+        }
+
+
+        return html
+    }
+
+    //For if statements
+    #If(htmlSegments, script, variables = {}) {
+        try
+        {
+            if(eval(script)) 
+                return this.#childSegments(htmlSegments, variables)
+            else {
+                if(!htmlSegments.else) return ''
+            
+
+                const elseStatement = Object.keys(htmlSegments.else)[0]
+
+
+                return this.#ExecuteStatements(htmlSegments.else[elseStatement], elseStatement, variables)
+            }
+        }
+        catch(err) {
+            if(err.message === 'Unexpected identifier') {
+                console.log(new SyntaxError("Invalid if-statement syntax"))
+            }
+            return false
+        }
+        
+    }
+
+    #childSegments(htmlSegments, variables) {
+
+        const content = htmlSegments.content
+        
+        let segmentIndex = 0
+
+        let html = content[segmentIndex]
+
+        let scopeSegments = Object.keys(htmlSegments)
+
+        for(let i = 0; i<scopeSegments.length; i++) {
+            if(scopeSegments[i] === 'content' || scopeSegments[i] === 'else') continue
+
+            const executedStatement = this.#ExecuteStatements(htmlSegments[scopeSegments[i]], scopeSegments[i], variables)
+
+            if(!executedStatement && executedStatement !== '') return false
+
+            segmentIndex++
+
+            html += executedStatement + content[segmentIndex]
+        }
+
+        const entries = Object.entries(variables)
+
+        for(let i = 0; i<entries.length; i++) {
+
+            const [ name, value ] = entries[i]
+
+
+            html = html.replace(new RegExp(`{${name}}`, 'g'), value)
+        }
+
+
+
+        return html
+    }
+
+    #objectTraversal(obj, path, variables = {}) {
+        if(typeof obj !== 'object' || Array.isArray(obj)) {
+            variables[path] = obj
+
+            return variables
+        }
+    
+        const keys = Object.keys(obj)
+    
+        for(let i = 0; i<keys.length; i++) {
+            this.#objectTraversal(obj[keys[i]], path + '.' + keys[i], variables)
+        }
+
+
+        return variables
+    }
 }
 
-const template = new HtmlTemplate('./test.html');
+module.exports = new HtmlTemplate()
