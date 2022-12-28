@@ -1,5 +1,6 @@
 const data_input = {
     posts: [
+        {id: 0, user: "                  robin@gmail.se                     ", content: "<script>alert('wow')</script>"},
         {id: 1, user: "robin.andreasson@metabytes.se", content: "With damn good business impact"},
         {id: 2, user: "ludwig@ludvig.se", content: "Ludwig"},
         {id: 3, user: "smedberg.tor@rot.se", content: "root user (not)"}

@@ -343,50 +343,65 @@ class HtmlTemplate
     }
 
     #childSegments(htmlSegments, variables) {
-
-        const content = htmlSegments.content
+        try
+        {
+            const content = htmlSegments.content
         
-        let segmentIndex = 0
+            let segmentIndex = 0
+    
+            let html = content[segmentIndex]
+    
+            let scopeSegments = Object.keys(htmlSegments)
+    
+            for(let i = 0; i<scopeSegments.length; i++) {
+                if(scopeSegments[i] === 'content' || scopeSegments[i] === 'else') continue
+    
+                const executedStatement = this.#ExecuteStatements(htmlSegments[scopeSegments[i]], scopeSegments[i], variables)
+    
+                if(!executedStatement && executedStatement !== '') return false
+    
+                segmentIndex++
+    
+                html += executedStatement + content[segmentIndex]
+            }
+    
+            const entries = Object.entries(variables)
+    
+            for(let i = 0; i<entries.length; i++) {
+    
+                const [ name, value ] = entries[i]
+    
+    
+                html = html.replace(new RegExp(`{{${name}}}`, 'g'), value)
+    
+                if(this.#attributedVariables[name]) {
+    
+                    const attributes = this.#attributedVariables[name]
+    
+                    for(let i = 0; i<attributes.length; i++) {
+                        const newValue = this.#Attributes(attributes[i], value)
 
-        let html = content[segmentIndex]
+                        if(!newValue) throw new Error(`${attributes[i] === '#' ? 'Escape' : 'Trim'} attribute can only be used on strings, "${name}" is not a string`)
 
-        let scopeSegments = Object.keys(htmlSegments)
-
-        for(let i = 0; i<scopeSegments.length; i++) {
-            if(scopeSegments[i] === 'content' || scopeSegments[i] === 'else') continue
-
-            const executedStatement = this.#ExecuteStatements(htmlSegments[scopeSegments[i]], scopeSegments[i], variables)
-
-            if(!executedStatement && executedStatement !== '') return false
-
-            segmentIndex++
-
-            html += executedStatement + content[segmentIndex]
+                        html = html.replace(new RegExp(`{{${attributes[i]}${name}}}`, 'g'), newValue)
+                    }
+                        
+                }   
+            }
+    
+            return html
         }
-
-        const entries = Object.entries(variables)
-
-        for(let i = 0; i<entries.length; i++) {
-
-            const [ name, value ] = entries[i]
-
-
-            html = html.replace(new RegExp(`{{${name}}}`, 'g'), value)
-
-            if(this.#attributedVariables[name]) {
-
-                const attributes = this.#attributedVariables[name]
-
-                for(let i = 0; i<attributes.length; i++)
-                    html = html.replace(new RegExp(`{{${attributes[i]}${name}}}`, 'g'), this.#Attributes(attributes[i], value))
-            }   
+        catch(err) {
+            console.log(err)
+            return false
         }
-
-        return html
     }
 
 
     #Attributes(attribute, s) {
+
+        if(typeof s !== 'string')
+            return false
          
         switch(attribute) {
             case '#':
@@ -394,8 +409,6 @@ class HtmlTemplate
             case '@':
                 return s.trim()
         }
-
-        return ''
     }
 
     #Escape(s) {

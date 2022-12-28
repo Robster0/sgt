@@ -11,20 +11,20 @@
     <div class="posts">
         {{ $loop posts as p }}
             <div class="post">
-                <h1 class="post-user">{{ #p.user }}</h1>
+                <h1 class="post-user">{{ @p.user }}</h1>
                 <textarea readonly class="post-content">{{ #p.content }}</textarea>
-                <p>ID: {{ #p.id }}</p>
+                <p>ID: {{ p.id }}</p>
             </div>
             <div class="comments">
                 {{ $loop comments as c }}
                         {{ $if c.postId EQ p.id }}
                             <div class="comment">
-                                <h1 class="comment-content">{{ #c.user }}</h1>
-                                <textarea class="comment-content" readonly>{{ #c.content }}</textarea>
+                                <h1 class="comment-content">{{ c.user }}</h1>
+                                <textarea class="comment-content" readonly>{{ c.content }}</textarea>
 
                                 <div class="comment-info">
-                                    <p>Comment ID: {{ #c.id }}</p>
-                                    <p>Post ID: {{ #c.postId }}</p>
+                                    <p>Comment ID: {{ c.id }}</p>
+                                    <p>Post ID: {{ c.postId }}</p>
                                 </div>
                             </div>                    
                         {{  /if }}                      
