@@ -288,11 +288,13 @@ class HtmlTemplate
 
 
     //For loops
-    #Loop(htmlSegments, [command, variable, as, pipeVariable], variables) {
+    #Loop(htmlSegments, [command, variable, as, pipeVariable, index], variables) {
   
         let html = ''
 
         let data = variables[variable] ? variables[variable] : this.#input[variable]        
+
+        if(pipeVariable[pipeVariable.length - 1] === ',') pipeVariable = pipeVariable.substring(0, pipeVariable.length - 1)
 
         for(let i = 0; i<data.length; i++) {
 
@@ -302,8 +304,8 @@ class HtmlTemplate
                 variables = {...variables, ...this.#objectTraversal(data[i], pipeVariable)}
               
             variables[pipeVariable] = data[i]
-            
 
+            if(index) variables[index] = i
 
             const scannedHtml = this.#childSegments(htmlSegments, variables)
 

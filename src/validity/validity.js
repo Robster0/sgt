@@ -33,8 +33,11 @@ function Validity(statementSeg, input, variables) {
         //validate loops
         if(command === '$loop') {
 
-            //if length isn't four, return false
-            if(statementSeg.length !== 4) return false
+            //if length isn't four or five, return false
+            if(statementSeg.length !== 4 && statementSeg.length !== 5) return false
+
+            if(statementSeg.length === 5 && statementSeg[3][statementSeg[3].length - 1] !== ',') return false
+
             //If variable that will be looped isn't inside the input, return false
             if(!(statementSeg[1] in input) && !(statementSeg[1] in variables)) return false
             //If variable that 
