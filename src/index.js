@@ -160,24 +160,36 @@ class HtmlTemplate
  
                         
                     //If its a statement
-                    if(statementType === '$') {
+                    if(statementType === '$' || statementType === ':') {
 
                         //If duplicate
                         if(htmlSegments[statement])
                             statement = statement + `-DUPLICATE-${Math.random().toString().substring(2, 5)}`
 
-                        stack.push(statement)
+
+                        if(statementType === ':') {
+
+                            const latestStatementType = latest?.split(' ')
+                            //If latest statement isn't an if statement or else statement, throw syntax error
+                            if(!latestStatementType || (latestStatementType[0] !== ':else' && latestStatementType[0] !== '$if')) 
+                                throw new SyntaxError(`else statement is used incorrectly, latest condition is "${latestStatementType ? latestStatementType[0] : 'undefined'}" but should be "$if" or ":else"`)
+    
+                            htmlSegments['else'] = {}
+                            htmlSegments['else'][statement] = {}
+
+                        } else {
+
+                            if(htmlSegments['content'])
+                                htmlSegments['content'].push('')
+
+                    
+                            htmlSegments[statement] = {}
+                        }   
 
                         
+                        stack.push(statement)
 
-                        if(htmlSegments['content'])
-                            htmlSegments['content'].push('')
-
-
-                        //if(htmlSegments)
-                        htmlSegments[statement] = {}
-
-                        const childSegments = this.#Scan(html, stack, htmlSegments[statement], i + 1)
+                        const childSegments = this.#Scan(html, stack, statementType === ':' ? htmlSegments['else'][statement] : htmlSegments[statement], i + 1)
 
                         if(!childSegments) return false
 
@@ -205,33 +217,6 @@ class HtmlTemplate
 
                         return [i + 1 - (latest[0] === ':' ? offset : 0), output, stack]
                     } 
-                    else if (statementType === ':') {
-                        if(htmlSegments[statement])
-                            statement = statement + `-DUPLICATE-${Math.random().toString().substring(2, 5)}`
-
-                        const latestStatementType = latest?.split(' ')
-                        //If latest statement isn't an if statement or else statement, throw syntax error
-                        if(!latestStatementType || (latestStatementType[0] !== ':else' && latestStatementType[0] !== '$if')) 
-                            throw new SyntaxError(`else statement is used incorrectly, latest condition is "${latestStatementType ? latestStatementType[0] : 'undefined'}" but should be "$if" or ":else"`)
-
-                        
-
-                        stack.push(statement)
-
-
-                        htmlSegments['else'] = {}
-                        htmlSegments['else'][statement] = {}
-
-                        const childSegments = this.#Scan(html, stack, htmlSegments['else'][statement], i + 1)
-
-                        if(!childSegments) return false
-
-                        let [ newStartIndex, newOutput, newStack ] = childSegments
-
-                        i = newStartIndex
-                        output += newOutput
-                        stack = newStack
-                    }
 
                     statement = ''
                     content = ''

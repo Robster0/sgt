@@ -7,12 +7,14 @@
     <title>{{ home-title }}</title>
 </head>
 <body>
-    {{ $if Number eq 3 }}
+    {{ $if Number eq 5 }}
         <header>
             {{$loop links as l}}
                 <a href="{{l.url}}">{{ l.title }}</a>
             {{/loop}}
         </header>
+    {{ :else if Number eq 3}}
+        <h1>ELSE IF STATEMENT</h1>
     {{ :else }}
         {{$loop attributetest as a}}
             <h1>{{ #a }}</h1>
