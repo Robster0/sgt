@@ -5,29 +5,32 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/static/css/style.css">
-    <title>{title}</title>
+    <title>{{  title  }}</title>
 </head>
 <body>
     <div class="posts">
-        {$loop posts as p}
+        {{ $loop posts as p }}
             <div class="post">
-                <h1 class="post-user">{p.user}</h1>
-                <h1 class="post-content">{p.content}</h1>
+                <h1 class="post-user">{{ #p.user }}</h1>
+                <textarea readonly class="post-content">{{ #p.content }}</textarea>
+                <p>ID: {{ #p.id }}</p>
             </div>
             <div class="comments">
-                {$loop comments as c}
-                        {$if c.postId EQ p.id}
+                {{ $loop comments as c }}
+                        {{ $if c.postId EQ p.id }}
                             <div class="comment">
-                                <h1 class="comment-content">user: {c.user}</h1>
-                                <h1 class="comment-content">content: {c.content}</h1>
-                            </div>                      
-                        {/if}
+                                <h1 class="comment-content">{{ #c.user }}</h1>
+                                <textarea class="comment-content" readonly>{{ #c.content }}</textarea>
 
-                        
-                {/loop}
-                <h1 class="comment-content">user: {c.user}</h1>
+                                <div class="comment-info">
+                                    <p>Comment ID: {{ #c.id }}</p>
+                                    <p>Post ID: {{ #c.postId }}</p>
+                                </div>
+                            </div>                    
+                        {{  /if }}                      
+                {{ /loop }}
             </div>
-        {/loop}
+        {{ /loop }}
     </div>
 </body>
 </html>

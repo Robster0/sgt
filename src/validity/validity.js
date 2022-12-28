@@ -5,10 +5,21 @@ const syntax = {
     '-eq': '!= ',
     'EQ': '=== ',
     '-EQ': '!== ',
-    'mod': '% ',
-    'and': '&& ',
-    'or': '|| ',
 
+    //Math
+    '+': '+ ',
+    '-': '- ',
+    '/': '/ ',
+    '*': '* ', 
+    '%': '% ',
+
+    //Logic
+    'And': '&& ',
+    'Or': '|| ',
+    'True': true,
+    'False': false,
+
+    //Also logic
     '>': '> ',
     '<': '< ',
     '>=': '>= ',
@@ -51,25 +62,42 @@ function Validity(statementSeg, input, variables) {
 
         for(let i = 1; i<statementSeg.length; i++) {
 
-            if(statementSeg[i][0] === '"') 
+            if(statementSeg[i][0] === '`') 
                 isString = true
 
-            const valid = syntax[statementSeg[i]]
-            if(valid)
-                script += valid
+            const sign = syntax[statementSeg[i]]
+
+            if(sign)
+                script += sign
             else {
                 if(isString)
                     script += statementSeg[i] + ' '
                 else {
-                    const getVariables = statementSeg[i] in input ? `this.#input["${statementSeg[i]}"] ` : `variables["${statementSeg[i]}"] `
-                    script += getVariables
+
+                    const isUndefinedSign = statementSeg[i][0] === '!'
+
+                    let variable
+
+                    if(isUndefinedSign)
+                        statementSeg[i] = statementSeg[i].substring(1, statementSeg[i].length)
+
+                    if(statementSeg[i] in input)
+                        variable = `this.#input["${statementSeg[i]}"] `
+                    else if(statementSeg[i] in variables)
+                        variable = `variables["${statementSeg[i]}"] `
+                    else 
+                        variable = statementSeg[i] + ' '
+
+                        
+                    
+                
+                    script += isUndefinedSign ? '!' + variable : variable
                 }
             }
 
-            if(statementSeg[i][statementSeg.length - 1] === '"') 
+            if(statementSeg[i][statementSeg.length - 1] === '`') 
                 isString = false
         }
-
 
         return script
     }

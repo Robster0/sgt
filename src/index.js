@@ -10,6 +10,7 @@ $: statement
 ":":  else statement 
 
 # (only on variables): escape
+@: trim white space
 
 (.*?test.*?)}
 
@@ -24,74 +25,128 @@ const Validity = require('./validity/validity')
 class HtmlTemplate
 {
     #input
+    #attributedVariables
 
     #statement_rules
     #scopeVariables
 
 
-    constructor(path)
-    {
-        this.#statement_rules = {
-            'eq': '=== ',
-            '-eq': '!== ',
-            'and': '&& ',
-            'or': '|| ',
+    Compile(path, input, defaultErrorResponse = '') {
+        try
+        {
 
-            '>': '> ',
-            '<': '< ',
-            '>=': '>= ',
-            '<=': '<= ',
+            //Checking if arguments are the correct type, if not then throw error
+            if(typeof path !== 'string') throw new TypeError(`path argument is of wrong type, expected string but is ${typeof path}`)
+
+            const isArr = Array.isArray(input)
+   
+            if(typeof input !== 'object' || isArr) throw new TypeError(`input argument is of wrong type, expected object but is ${isArr ? 'array' : typeof input}`)
+
+            if(typeof defaultErrorResponse !== 'string') throw new TypeError(`defaultErrorResponse argument is of wrong type, expected string but is ${typeof defaultErrorResponse}`)
+            
+            
+            //Set the variables
+            this.#input = input
+            this.#attributedVariables = {}
+    
+            //read the html file
+            const html = fs.readFileSync(path).toString('utf-8')
+    
+    
+            //Start the Scan
+            const output = this.#Scan(html)
+            
+            //If error
+            if(!output) return defaultErrorResponse
+    
+    
+            return output
         }
-    }
+        catch(err) {
+            console.log(err)
 
-    Render(path, input) {
-        //Set the variables
-        this.#input = input
-
-        //read the html file
-        const html = fs.readFileSync(path).toString('utf-8')
-
-
-        //Start the Scan
-        return this.#Scan(html)        
+            return defaultErrorResponse
+        }
     }
 
     #Scan(html, stack = [], htmlSegments = {}, startIndex = 0) {
         try
         {
 
-            //Write: currently writing a statement, scan: currently looking for a statement
+            //Write: currently writing a statement/variable, scan: currently looking for a statement
             let mode = 'scan'
-            let newHtml = ''
+
+            //the outputed html
+            let output = ''
+
+            //Shouldn't be called this since it can also be a variable but fuck it
             let statement = ''
+            
+            //scope html
             let content = ''
             
 
 
             for(let i = startIndex; i<html.length; i++) 
             {
-                if(html[i] === '{') {
+                //if its a opening statement, start write mode
+                if(html[i] === '{' && html[i + 1] === '{') {
                     mode = 'write'
+                    i++
                 } 
-                else if(html[i] === '}') {
+                //if its a closing statement, start scan mode but also add new/remove statement, stack validity and evaluate scope
+                else if(html[i] === '}' && html[i + 1] === '}') {
                     mode = 'scan'
+                    i++
+
+                    //Offset for else statements, its a stupid solution to a problem (I should start the process of refactoring this (I won't))
+                    const offset = statement.length + 5
+
+                    //Trim the white space from the outer sides of the statement 
+                    if(statement) statement = statement.trim()
 
 
-                    const command = statement[0]
-                    const notCommand = command !== '$' && command !== '/' && command !== ':'
+                    /**
+                    * get the first character of the statement
+                    * 
+                    * 
+                    * "$": condition, e.g. if statement or a loop
+                    * ":":  else statement
+                    * "/": close the current scope, e.g. {{/if}} (not inspired by Svelte)
+                    */
+                    const statementType = statement[0]
+
+                    //Check if its a statement, if not then its a variable
+                    const isVariable = statementType !== '$' && statementType !== '/' && statementType !== ':'
                     
+                    const hasAttribute = statementType === '#' || statementType === '@'
+
+                    if(hasAttribute)
+                        statement = statement.substring(1, statement.length) 
+
+                    //Get the latest statement from the stack
                     const latest = stack[stack.length - 1]
 
-                    //If the statement is just a variable
-                    if(notCommand && statement in this.#input)
-                        content += this.#input[statement]             
-                    else if(notCommand) {
-                        content += `{${statement}}`
+                    //If the statement is a variable and is inside the this.#input variable 
+                    if(isVariable && statement in this.#input) {
+
+                        content += hasAttribute ? this.#Attributes(statementType, this.#input[statement]) : this.#input[statement]
+
+                    }
+                    else if(isVariable) { //if the statement is a variable 
+                        content += `{{${hasAttribute ? statementType : ''}${statement}}}`
+
+                        if(hasAttribute) { 
+                            if(!this.#attributedVariables[statement])
+                                this.#attributedVariables[statement] = []
+
+                            this.#attributedVariables[statement].push(statementType)
+                        }    
                     }
 
                     //not inside a scope
                     if(stack.length === 0)
-                        newHtml += content  
+                        output += content  
                            
 
                     if(latest) {
@@ -105,11 +160,15 @@ class HtmlTemplate
  
                         
                     //If its a statement
-                    if(command === '$') {
+                    if(statementType === '$') {
+
+                        //If duplicate
                         if(htmlSegments[statement])
                             statement = statement + `-DUPLICATE-${Math.random().toString().substring(2, 5)}`
 
                         stack.push(statement)
+
+                        
 
                         if(htmlSegments['content'])
                             htmlSegments['content'].push('')
@@ -122,14 +181,14 @@ class HtmlTemplate
 
                         if(!childSegments) return false
 
-                        const [ newStartIndex, newNewHtml, newStack ] = childSegments
+                        const [ newStartIndex, newOutput, newStack ] = childSegments
 
                         i = newStartIndex
-                        newHtml += newNewHtml
+                        output += newOutput
                         stack = newStack
                     } 
                     //If its a closing statement
-                    else if (command === '/') {
+                    else if (statementType === '/') {
                         stack = this.#ValidateScopes(stack, statement)
 
  
@@ -139,18 +198,23 @@ class HtmlTemplate
                             const segHTML = this.#ExecuteStatements(htmlSegments, latest)
                             
                             if(segHTML) {
-                                newHtml += segHTML
+                                output += segHTML
                                 htmlSegments = {}
                             }        
                         }
 
-                        const elseStatementOffset = (latest[0] === ':' ? statement.length + 3 : 0)
-
-                        return [i + 1 - elseStatementOffset, newHtml, stack]
+                        return [i + 1 - (latest[0] === ':' ? offset : 0), output, stack]
                     } 
-                    else if (command === ':') {
+                    else if (statementType === ':') {
                         if(htmlSegments[statement])
                             statement = statement + `-DUPLICATE-${Math.random().toString().substring(2, 5)}`
+
+                        const latestStatementType = latest?.split(' ')
+                        //If latest statement isn't an if statement or else statement, throw syntax error
+                        if(!latestStatementType || (latestStatementType[0] !== ':else' && latestStatementType[0] !== '$if')) 
+                            throw new SyntaxError(`else statement is used incorrectly, latest condition is "${latestStatementType ? latestStatementType[0] : 'undefined'}" but should be "$if" or ":else"`)
+
+                        
 
                         stack.push(statement)
 
@@ -162,10 +226,10 @@ class HtmlTemplate
 
                         if(!childSegments) return false
 
-                        const [ newStartIndex, newNewHtml, newStack ] = childSegments
+                        let [ newStartIndex, newOutput, newStack ] = childSegments
 
                         i = newStartIndex
-                        newHtml += newNewHtml
+                        output += newOutput
                         stack = newStack
                     }
 
@@ -180,11 +244,11 @@ class HtmlTemplate
                 }
             }
 
-            if(stack.length !== 0) throw new SyntaxError("Missing closing scope")
+            if(stack.length !== 0) throw new SyntaxError(`"${stack[stack.length - 1]}" statement scope is never closed`)
 
-            newHtml += content
+            output += content
 
-            return newHtml
+            return output
         }
         catch(err) 
         {
@@ -249,12 +313,11 @@ class HtmlTemplate
 
             const isObject = typeof data[i] === 'object' && !Array.isArray(data[i]) 
             
-            if(isObject) {
+            if(isObject)
                 variables = {...variables, ...this.#objectTraversal(data[i], pipeVariable)}
-
-            } else {
-                variables[pipeVariable] = data[i]
-            }
+              
+            variables[pipeVariable] = data[i]
+            
 
 
             const scannedHtml = this.#childSegments(htmlSegments, variables)
@@ -279,7 +342,7 @@ class HtmlTemplate
                 return this.#childSegments(htmlSegments, variables)
             else {
                 if(!htmlSegments.else) return ''
-            
+
 
                 const elseStatement = Object.keys(htmlSegments.else)[0]
 
@@ -288,9 +351,7 @@ class HtmlTemplate
             }
         }
         catch(err) {
-            if(err.message === 'Unexpected identifier') {
-                console.log(new SyntaxError("Invalid if-statement syntax"))
-            }
+            console.log(new SyntaxError("Invalid if-statement syntax"))
             return false
         }
         
@@ -325,12 +386,52 @@ class HtmlTemplate
             const [ name, value ] = entries[i]
 
 
-            html = html.replace(new RegExp(`{${name}}`, 'g'), value)
+            html = html.replace(new RegExp(`{{${name}}}`, 'g'), value)
+
+            if(this.#attributedVariables[name]) {
+
+                const attributes = this.#attributedVariables[name]
+
+                for(let i = 0; i<attributes.length; i++)
+                    html = html.replace(new RegExp(`{{${attributes[i]}${name}}}`, 'g'), this.#Attributes(attributes[i], value))
+            }   
         }
 
-
-
         return html
+    }
+
+
+    #Attributes(attribute, s) {
+         
+        switch(attribute) {
+            case '#':
+                return this.#Escape(s)
+            case '@':
+                return s.trim()
+        }
+
+        return ''
+    }
+
+    #Escape(s) {
+
+        const targets = {
+            '>': '&gt;',
+            '<': '&lt;',
+
+            '&': '&amp;',
+
+            "'": '&#39;',
+            '"': '&quot;'
+        };
+
+        let escaped = ``
+
+        for(let i = 0; i<s.length; i++) 
+            escaped += targets[s[i]] ? targets[s[i]] : s[i]  
+
+ 
+        return escaped
     }
 
     #objectTraversal(obj, path, variables = {}) {
