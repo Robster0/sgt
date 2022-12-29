@@ -45,8 +45,24 @@ class HtmlTemplate
             if(result) throw new SyntaxError(result)
             
             //Set the variables
-            this.#input = input
+            this.#input = {...input}
             this.#attributedVariables = {}
+
+            const keys = Object.keys(this.#input)
+
+            console.log(input)
+
+            for(let i = 0; i<keys.length; i++) {
+                if(typeof this.#input[keys[i]] === 'object' && !Array.isArray(this.#input[keys[i]])) {
+                    console.log(keys[i])
+                    const result = this.#objectTraversal(this.#input[keys[i]], keys[i], this.#input)
+
+                    if(!result) throw new Error('Duplicate variables are not allowed')
+
+                    console.log(this.#input)
+                }
+                    
+            }
     
             //read the html file
             const html = fs.readFileSync(path).toString('utf-8')
@@ -246,13 +262,16 @@ class HtmlTemplate
         {
             const statementSeg = statement.split('-DUPLICATE-')[0].split(' ').filter(e => e)
 
-            const [ value, error ] = Validity(statementSeg, this.#input, variables)
+            const value = Validity(statementSeg, this.#input, variables)
     
-            if(!value) throw new SyntaxError(error)
+            if(!value) return false
     
             switch(statementSeg[0].toLowerCase()) {
                 case '$if':
                 case ':else':
+                    console.log("AFTER")
+                    console.log(value)
+                    console.log("AFTER\r\n")
                     return this.#If(htmlSegments, value, variables)
                 case '$loop':
                     return this.#Loop(htmlSegments, statementSeg, variables)
@@ -269,40 +288,56 @@ class HtmlTemplate
 
     //For loops
     #Loop(htmlSegments, [command, variable, as, pipeVariable, index], variables) {
-  
-        let html = ''
 
-        let data = variables[variable] ? variables[variable] : this.#input[variable]        
+        try
+        {
+            let html = ''
 
-        if(pipeVariable[pipeVariable.length - 1] === ',') pipeVariable = pipeVariable.substring(0, pipeVariable.length - 1)
+            let data = variables[variable] ? variables[variable] : this.#input[variable]        
+    
+            if(pipeVariable[pipeVariable.length - 1] === ',') pipeVariable = pipeVariable.substring(0, pipeVariable.length - 1)
+    
+            if(pipeVariable in this.#input || pipeVariable in variables) throw new Error('Duplicate variables are not allowed')
+            if(index in this.#input || index in variables) throw new Error('Duplicate variables are not allowed')
 
-        for(let i = 0; i<data.length; i++) {
-
-            const isObject = typeof data[i] === 'object' && !Array.isArray(data[i]) 
-            
-            if(isObject)
-                variables = {...variables, ...this.#objectTraversal(data[i], pipeVariable)}
-              
-            variables[pipeVariable] = data[i]
-
-            if(index) variables[index] = i
-
-            const result = ValidateVariableNames(variables)
-
-            if(result) throw new SyntaxError(result)
-
-            const scannedHtml = this.#childSegments(htmlSegments, variables)
-
-            if(!scannedHtml && scannedHtml !== '') return false
-
-            //Delete this variable since shallow copy won't
-            delete variables[pipeVariable]
-            
-            html += scannedHtml
+            for(let i = 0; i<data.length; i++) {
+    
+                const isObject = typeof data[i] === 'object' && !Array.isArray(data[i]) 
+                
+                if(isObject) {
+    
+                    let nodes = this.#objectTraversal(data[i], pipeVariable)
+    
+                    if(!nodes) throw new Error('Duplicate variables are not allowed')
+    
+                    variables = {...variables, ...nodes}
+                }
+                                
+                variables[pipeVariable] = data[i]
+    
+                if(index) variables[index] = i
+    
+                const result = ValidateVariableNames(variables)
+    
+                if(result) throw new SyntaxError(result)
+    
+                const scannedHtml = this.#childSegments(htmlSegments, variables)
+    
+                if(!scannedHtml && scannedHtml !== '') return false
+    
+                //Delete this variable since shallow copy won't
+                delete variables[pipeVariable]
+                
+                html += scannedHtml
+            }
+    
+    
+            return html
         }
-
-
-        return html
+        catch(err) {
+            console.log(err)
+            return false
+        }
     }
 
     //For if statements
@@ -418,21 +453,27 @@ class HtmlTemplate
         return escaped
     }
 
-    #objectTraversal(obj, path, variables = {}) {
+    #objectTraversal(obj, path, newVariables = {}) {
         if(typeof obj !== 'object' || Array.isArray(obj)) {
-            variables[path] = obj
 
-            return variables
+            if(path in this.#input) 
+                return false
+
+            newVariables[path] = obj
+
+            return newVariables
         }
     
         const keys = Object.keys(obj)
     
         for(let i = 0; i<keys.length; i++) {
-            this.#objectTraversal(obj[keys[i]], path + '.' + keys[i], variables)
+            let result = this.#objectTraversal(obj[keys[i]], path + '.' + keys[i], newVariables)
+
+            if(!result) return false
         }
 
 
-        return variables
+        return newVariables
     }
 }
 

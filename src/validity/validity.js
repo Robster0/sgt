@@ -1,29 +1,29 @@
 "use strict"
 
 const syntax = {
-    'eq': '== ',
-    '-eq': '!= ',
-    'EQ': '=== ',
-    '-EQ': '!== ',
+    'eq': '==',
+    '-eq': '!=',
+    'EQ': '===',
+    '-EQ': '!==',
 
     //Math
-    '+': '+ ',
-    '-': '- ',
-    '/': '/ ',
-    '*': '* ', 
-    '%': '% ',
+    '+': '+',
+    '-': '-',
+    '/': '/',
+    '*': '*', 
+    '%': '%',
 
     //Logic
-    'And': '&& ',
-    'Or': '|| ',
-    'True': 'true ',
-    'False': 'false ',
+    'And': '&&',
+    'Or': '||',
+    'True': 'true',
+    'False': 'false',
 
     //Also logic
-    '>': '> ',
-    '<': '< ',
-    '>=': '>= ',
-    '<=': '<= ',
+    '>': '>',
+    '<': '<',
+    '>=': '>=',
+    '<=': '<=',
 }
 
 const notAllowed = {
@@ -45,18 +45,18 @@ function Validity(statementSeg, input, variables) {
         if(command === '$loop') {
 
             //if length isn't four or five, return false
-            if(statementSeg.length !== 4 && statementSeg.length !== 5) return [ null, '' ]
+            if(statementSeg.length !== 4 && statementSeg.length !== 5) throw new SyntaxError('Invalid loop statement')
 
-            if(statementSeg.length === 5 && statementSeg[3][statementSeg[3].length - 1] !== ',') return [null, 'missing mandatory comma sign']
+            if(statementSeg.length === 5 && statementSeg[3][statementSeg[3].length - 1] !== ',') throw new SyntaxError('missing mandatory comma sign')
 
             //If variable that will be looped isn't inside the input, return false
-            if(!(statementSeg[1] in input) && !(statementSeg[1] in variables)) return [ null, `variable "${statementSeg[1]}" does not exist in the input` ]
+            if(!(statementSeg[1] in input) && !(statementSeg[1] in variables)) throw new Error(`variable "${statementSeg[1]}" does not exist in the input`)
             //If variable that 
-            if(!Array.isArray(input[statementSeg[1]]) && !Array.isArray(variables[statementSeg[1]])) return [null, `variable "${statementSeg[1]}" is not iterable`]
+            if(!Array.isArray(input[statementSeg[1]]) && !Array.isArray(variables[statementSeg[1]])) throw new Error(`variable "${statementSeg[1]}" is not iterable`)
             
-            if(statementSeg[2].toLowerCase() !== 'as') return [null, 'missing mandatory "as" command']
+            if(statementSeg[2].toLowerCase() !== 'as') throw new SyntaxError('missing mandatory "as" command')
 
-            return [ true, null ]
+            return true
         }
 
         if(command === ':else') {
@@ -67,53 +67,57 @@ function Validity(statementSeg, input, variables) {
             statementSeg[0] = '$' + statementSeg[0]
         }
 
-        if(statementSeg[0].toLowerCase() !== '$if') return [null, command === ':else' ? 'else statement if continued can only be followed by an if statement' : 'command is unknown' ]
-
+        if(statementSeg[0].toLowerCase() !== '$if') 
+            throw new SyntaxError(command === ':else' ? 'else statement if continued can only be followed by an if statement' : 'command is unknown')
 
         let script = ''
-        let isString = false
-           
-        for(let i = 1; i<statementSeg.length; i++) {
-            if(statementSeg[i][0] === '`') 
-                isString = true
+        for(let i = 1; i<statementSeg.length; i++)
+            script += statementSeg[i] + ' '
 
-            if(notAllowed[statementSeg[i]]) return [ null, 'follow the documentation for logic conditions' ]
-            
-            const sign = syntax[statementSeg[i]]
-    
-            if(sign)
-                script += sign
-            else {
-                if(isString)
-                    script += statementSeg[i] + ' '
-                else {
-    
-                    const isFalseSign = statementSeg[i][0] === '!'
-    
-                    let variable
-    
-                    if(isFalseSign)
-                        statementSeg[i] = statementSeg[i].substring(1, statementSeg[i].length)
-    
-                    if(statementSeg[i] in input)
-                        variable = `this.#input["${statementSeg[i]}"] `  
-                    else if(statementSeg[i] in variables)
-                        variable = `variables["${statementSeg[i]}"] `
-                    else 
-                        variable = statementSeg[i] + ' '
-    
-                        
-                    
-                
-                    script += isFalseSign ? '!' + variable : variable
+
+        console.log("BEFORE")
+        console.log(script)
+        console.log("BEFORE\r\n")
+
+        let data = []
+        let variable = ``
+        
+        let isString = false
+        
+        for(let i = 0; i<script.length; i++) {
+            if(script[i] === '`')
+                isString = isString ? false : true
+        
+            if(isString) continue
+        
+            if(!script[i].match(/\s|\(|\)|,/gms)) {
+                variable += script[i]
+        
+            } else {
+                if(variable in input) {
+                    data.push({name: variable, variant: 1, start: i - variable.length, end: i})
+                } else if(variable in variables) {
+                    data.push({name: variable, variant: 0, start: i - variable.length, end: i})
+                } else if(variable in syntax) {
+                    data.push({name: variable, variant: variable, start: i - variable.length, end: i})
                 }
+        
+                variable = ``        
             }
-    
-            if(statementSeg[i][statementSeg.length - 1] === '`') 
-                isString = false
         }
 
-        return [script, null]
+        if(isString) throw new TypeError('backtick is never closed')
+        
+        let offset = 0
+
+        for(let i = 0; i<data.length; i++) {
+            const [ newS, newOffset ] = swap(data[i], script, offset)
+        
+            script = newS
+            offset += newOffset 
+        }
+
+        return script
     }
     catch(err) {
 
@@ -122,13 +126,33 @@ function Validity(statementSeg, input, variables) {
     }
 }
 
+function swap(v, script, offset) {
+    let add = 0
+    let value = ``
+
+    if(v.variant === 1 || v.variant === 0) {
+
+        add = v.variant === 1 ? 15 : 13
+        value = v.variant === 1 ? `this.#input["${v.name}"]` : `variables["${v.name}"]`
+
+    } else {
+        add = syntax[v.variant].length - v.variant.length 
+        value = syntax[v.variant]
+    }
+
+    script = script.slice(0, v.start + offset) + value + script.slice(v.end + offset)
+
+    return [ script, add ]
+
+}
+
 
 function ValidateVariableNames(input) {
     const keys = Object.keys(input)
 
     for(let i = 0; i<keys.length; i++) {
-        if(keys[i].match(/#|@/gm))
-            return `framework exclusive characters like "#" or "@" are not allowed in variable names ( ${keys[i]} )`
+        if(keys[i].match(/#|@|\s|\(|\)|,/gm))
+            return `framework exclusive keywords are ['#'  '$'  '/'  ':'  '@'  ' '  ','  '('  ')'  '-DUPLICATE-' ], these are not allowed in variable names ( ${keys[i]} )`
     }
         
 

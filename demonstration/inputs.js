@@ -36,7 +36,7 @@ const links = {
         return num1 + num2
     },
 
-    strings: (s1, s2, s3) => {
+    strings: (s1, s2, s3 = '3') => {
         console.log(s1 + s2 + s3)
            
         return s1 + s2 + s3
@@ -47,7 +47,7 @@ const links = {
 
 
     'hometitle': 'HOME!',
-    Strings: `while(true) { console.log("DICK"); }`,
+    Strings: `while(true) { console.log("no"); }`,
     alert: `<script>alert("wow")</script>`,
 
     test: `&lt;script&gt;alert(&quot;wow&quot;)&lt;/script&gt;`,
@@ -56,7 +56,15 @@ const links = {
     attributetest: [ `<script>alert("DAMN1")</script>`, `<script>alert("DAMN2")</script>` ],
 
 
-    trimTest: '\rn-WOWOWOWO-\r\n'
+    trimTest: '\rn-WOWOWOWO-\r\n',
+
+
+    testobj: {
+        'damn': "wow",
+        'damn1': "wow",
+        'damn2': "wow",
+        'damn3': "wow"
+    }
 }
 
 
