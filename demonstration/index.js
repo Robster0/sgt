@@ -27,4 +27,11 @@ function posts(w, r) {
 }
 
 
+//const time_1 = performance.now()
+//Twig.Compile(__dirname + '/posts.html', data_input)
+//const time_2 = performance.now()
+//
+//console.log("MILLISECONDS: ", time_2 - time_1)
+
+
 

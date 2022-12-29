@@ -18,7 +18,7 @@ $: statement
 
 const fs = require('fs');
 
-const Validity = require('./validity/validity')
+const { Validity, ValidateVariableNames, ValidateScopes } = require('./validity/validity')
 
 
 
@@ -26,10 +26,6 @@ class HtmlTemplate
 {
     #input
     #attributedVariables
-
-    #statement_rules
-    #scopeVariables
-
 
     Compile(path, input, defaultErrorResponse = '') {
         try
@@ -44,6 +40,9 @@ class HtmlTemplate
 
             if(typeof defaultErrorResponse !== 'string') throw new TypeError(`defaultErrorResponse argument is of wrong type, expected string but is ${typeof defaultErrorResponse}`)
             
+            const result = ValidateVariableNames(input)
+
+            if(result) throw new SyntaxError(result)
             
             //Set the variables
             this.#input = input
@@ -201,7 +200,7 @@ class HtmlTemplate
                     } 
                     //If its a closing statement
                     else if (statementType === '/') {
-                        stack = this.#ValidateScopes(stack, statement)
+                        stack = ValidateScopes(stack, statement)
 
  
                         if(!stack) throw new SyntaxError("Missing or wrong closing statement")
@@ -243,47 +242,28 @@ class HtmlTemplate
     }
 
     #ExecuteStatements(htmlSegments, statement, variables = {}) {
-
-        const statementSeg = statement.split('-DUPLICATE-')[0].split(' ').filter(e => e)
-
-        const value = Validity(statementSeg, this.#input, variables)
-        
-        if(!value) return ''
-
-        switch(statementSeg[0].toLowerCase()) {
-            case '$if':
-            case ':else':
-                return this.#If(htmlSegments, value, variables)
-            case '$loop':
-                return this.#Loop(htmlSegments, statementSeg, variables)
-        }
-
-        return ''
-    }
-
-    #ValidateScopes(stack, command) {
-
-        const latest = stack[stack.length - 1].split(' ')[0]
-
-        switch(command)
+        try
         {
-            case '/if':
-                if(latest !== ':else' && latest !== '$if')
-                    return false
+            const statementSeg = statement.split('-DUPLICATE-')[0].split(' ').filter(e => e)
 
-                stack.pop()
-
-                return stack
-            case '/loop':
-                if(latest !== '$loop') 
-                    return false
-                    
-                stack.pop()
-
-                return stack
-            default:
-                return false
-        }  
+            const [ value, error ] = Validity(statementSeg, this.#input, variables)
+    
+            if(!value) throw new SyntaxError(error)
+    
+            switch(statementSeg[0].toLowerCase()) {
+                case '$if':
+                case ':else':
+                    return this.#If(htmlSegments, value, variables)
+                case '$loop':
+                    return this.#Loop(htmlSegments, statementSeg, variables)
+            }
+    
+            return ''
+        }
+        catch(err) {
+            console.log(err)
+            return false
+        }
     }
 
 
@@ -306,6 +286,10 @@ class HtmlTemplate
             variables[pipeVariable] = data[i]
 
             if(index) variables[index] = i
+
+            const result = ValidateVariableNames(variables)
+
+            if(result) throw new SyntaxError(result)
 
             const scannedHtml = this.#childSegments(htmlSegments, variables)
 

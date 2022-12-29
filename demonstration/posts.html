@@ -12,12 +12,12 @@
         {{ $loop posts as p }}
             <div class="post">
                 <h1 class="post-user">{{ @p.user }}</h1>
-                <textarea readonly class="post-content">{{ #p.content }}</textarea>
+                {{ #p.content }}
                 <p>ID: {{ p.id }}</p>
             </div>
             <div class="comments">
                 {{ $loop comments as c }}
-                        {{ $if c.postId EQ p.id }}
+                        {{ $if c.postId eq p.id }}
                             <div class="comment">
                                 <h1 class="comment-content">{{ c.user }}</h1>
                                 <textarea class="comment-content" readonly>{{ c.content }}</textarea>

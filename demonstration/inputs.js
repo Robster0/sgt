@@ -1,6 +1,6 @@
 const data_input = {
     posts: [
-        {id: 0, user: "                  robin@gmail.se                     ", content: "<script>alert('wow')</script>"},
+        {id: 0, user: "                  robin@gmail.se                     ", content: "<script>while(true) { console.log('bro'); } </script>"},
         {id: 1, user: "robin.andreasson@metabytes.se", content: "With damn good business impact"},
         {id: 2, user: "ludwig@ludvig.se", content: "Ludwig"},
         {id: 3, user: "smedberg.tor@rot.se", content: "root user (not)"}
@@ -28,8 +28,26 @@ const links = {
     
     Number: 4,
 
-    'home-title': 'HOME!',
-    String: `damn wow cool guy`,
+    func: (num1, num2 = 'asd') => {
+        console.log(num1)
+        console.log(num2)
+
+
+        return num1 + num2
+    },
+
+    strings: (s1, s2, s3) => {
+        console.log(s1 + s2 + s3)
+           
+        return s1 + s2 + s3
+    },
+
+
+    test2: "damn",
+
+
+    'hometitle': 'HOME!',
+    Strings: `while(true) { console.log("DICK"); }`,
     alert: `<script>alert("wow")</script>`,
 
     test: `&lt;script&gt;alert(&quot;wow&quot;)&lt;/script&gt;`,
@@ -38,7 +56,7 @@ const links = {
     attributetest: [ `<script>alert("DAMN1")</script>`, `<script>alert("DAMN2")</script>` ],
 
 
-    trimTest: '   -WOWOWOWO-   '
+    trimTest: '\rn-WOWOWOWO-\r\n'
 }
 
 
