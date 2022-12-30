@@ -7,16 +7,19 @@
     <title>{{ home-title }}</title>
 </head>
 <body>
-    {{ $if strings(test2, `wow`) EQ `damnwow3` }}
+    {{ #if strings(test2, `wow`) eq `damnwow3` }}
         <header>
-            {{ $loop links as link, i }}
+            {{ #loop links as link, i }}
 
-                {{ i }}. <a href="{{ #link.url }}"> {{ link.title }}</a>
+                {{ i }}. <a href="{{ %link.url }}"> {{ @link.title }}</a>
             
             {{ /loop }}
         </header>
-    {{ :else if Number + 1 eq 5 }}
+    {{ :else if Number + 1 eq 6 }}
         <h1>WOW</h1>
+
+    {{ :else }}
+        <h2>DAMN</h2>
     {{ /if }}
 </body>
 </html>

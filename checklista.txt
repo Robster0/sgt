@@ -1,0 +1,7 @@
+1. remove "variables" (if possible): DONE?
+
+2. fix performance, DONE (maybe)
+
+3. create utils script
+
+4. add a deep copy function for objects 

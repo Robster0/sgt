@@ -1,15 +1,17 @@
 /*
 
+Html-tempalate engine that heavily focuses on the idea of no "with" statement (even tho it would definitely be faster)
+
 Syntax:
 
 
-$: statement
+#: statement
 
 /: end the statement
 
 ":":  else statement 
 
-# (only on variables): escape
+% (only on variables): escape
 @: trim white space
 
 (.*?test.*?)}
@@ -18,14 +20,17 @@ $: statement
 
 const fs = require('fs');
 
-const { Validity, ValidateVariableNames, ValidateScopes } = require('./validity/validity')
+const { Validity, ValidateVariableNames, ValidateScopes } = require('./validity/validity.js')
+const { generateIfStatement, objectPaths, Escape, _ATTRIBUTES_ } = require('./utils.js')
 
 
 
 class HtmlTemplate
 {
     #input
-    #attributedVariables
+    #scopeVariables
+    #cache
+
 
     Compile(path, input, defaultErrorResponse = '') {
         try
@@ -46,29 +51,26 @@ class HtmlTemplate
             
             //Set the variables
             this.#input = {...input}
-            this.#attributedVariables = {}
+            this.#scopeVariables = {}
+            this.#cache = {} 
 
             const keys = Object.keys(this.#input)
 
-            console.log(input)
-
             for(let i = 0; i<keys.length; i++) {
                 if(typeof this.#input[keys[i]] === 'object' && !Array.isArray(this.#input[keys[i]])) {
-                    console.log(keys[i])
-                    const result = this.#objectTraversal(this.#input[keys[i]], keys[i], this.#input)
+
+                    const result = objectPaths(this.#input[keys[i]], keys[i], this.#input)
 
                     if(!result) throw new Error('Duplicate variables are not allowed')
-
-                    console.log(this.#input)
                 }
                     
             }
     
-            //read the html file
+            /**@type {string} */
             const html = fs.readFileSync(path).toString('utf-8')
     
     
-            //Start the Scan
+            /**@type {string | boolean} */
             const output = this.#Scan(html)
             
             //If error
@@ -88,16 +90,10 @@ class HtmlTemplate
         try
         {
 
-            //Write: currently writing a statement/variable, scan: currently looking for a statement
+            /** @type {string} */
             let mode = 'scan'
-
-            //the outputed html
             let output = ''
-
-            //Shouldn't be called this since it can also be a variable but fuck it
             let statement = ''
-            
-            //scope html
             let content = ''
             
 
@@ -125,16 +121,16 @@ class HtmlTemplate
                     * get the first character of the statement
                     * 
                     * 
-                    * "$": condition, e.g. if statement or a loop
+                    * "#": condition, e.g. if statement or a loop
                     * ":":  else statement
                     * "/": close the current scope, e.g. {{/if}} (not inspired by Svelte)
                     */
                     const statementType = statement[0]
 
                     //Check if its a statement, if not then its a variable
-                    const isVariable = statementType !== '$' && statementType !== '/' && statementType !== ':'
+                    const isVariable = statementType !== '#' && statementType !== '/' && statementType !== ':'
                     
-                    const hasAttribute = statementType === '#' || statementType === '@'
+                    const hasAttribute = statementType === '%' || statementType === '@'
 
                     if(hasAttribute)
                         statement = statement.substring(1, statement.length) 
@@ -151,12 +147,10 @@ class HtmlTemplate
                     else if(isVariable) { //if the statement is a variable 
                         content += `{{${hasAttribute ? statementType : ''}${statement}}}`
 
-                        if(hasAttribute) { 
-                            if(!this.#attributedVariables[statement])
-                                this.#attributedVariables[statement] = []
+                        if(!this.#scopeVariables[latest])
+                            this.#scopeVariables[latest] = {}
 
-                            this.#attributedVariables[statement].push(statementType)
-                        }    
+                        this.#scopeVariables[latest][(hasAttribute ? statementType : '') + statement] = 1
                     }
 
                     //not inside a scope
@@ -175,7 +169,7 @@ class HtmlTemplate
  
                         
                     //If its a statement
-                    if(statementType === '$' || statementType === ':') {
+                    if(statementType === '#' || statementType === ':') {
 
                         //If duplicate
                         if(htmlSegments[statement])
@@ -186,8 +180,8 @@ class HtmlTemplate
 
                             const latestStatementType = latest?.split(' ')
                             //If latest statement isn't an if statement or else statement, throw syntax error
-                            if(!latestStatementType || (latestStatementType[0] !== ':else' && latestStatementType[0] !== '$if')) 
-                                throw new SyntaxError(`else statement is used incorrectly, latest condition is "${latestStatementType ? latestStatementType[0] : 'undefined'}" but should be "$if" or ":else"`)
+                            if(!latestStatementType || (latestStatementType[0] !== ':else' && latestStatementType[0] !== '#if')) 
+                                throw new SyntaxError(`else statement is used incorrectly, latest condition is "${latestStatementType ? latestStatementType[0] : 'undefined'}" but should be "#if" or ":else"`)
     
                             htmlSegments['else'] = {}
                             htmlSegments['else'][statement] = {}
@@ -222,12 +216,13 @@ class HtmlTemplate
                         if(!stack) throw new SyntaxError("Missing or wrong closing statement")
 
                         if(stack.length === 0) {
-                            const segHTML = this.#ExecuteStatements(htmlSegments, latest)
                             
-                            if(segHTML) {
-                                output += segHTML
-                                htmlSegments = {}
-                            }        
+                            const result = this.#ExecuteStatements(htmlSegments, latest, this.#input)
+                            
+                            if(!result && result?.length !== 0) return false
+
+                            output += result
+                            htmlSegments = {}   
                         }
 
                         return [i + 1 - (latest[0] === ':' ? offset : 0), output, stack]
@@ -257,24 +252,29 @@ class HtmlTemplate
         }   
     }
 
-    #ExecuteStatements(htmlSegments, statement, variables = {}) {
+    #ExecuteStatements(htmlSegments, statement, input) {
         try
         {
             const statementSeg = statement.split('-DUPLICATE-')[0].split(' ').filter(e => e)
 
-            const value = Validity(statementSeg, this.#input, variables)
-    
-            if(!value) return false
-    
+            let value
+
+            if(!this.#cache[statement]) {
+                value = Validity(statementSeg, statement, input)
+
+                if(!value) return false
+
+                this.#cache[statement] = value
+            }
+            else 
+                value = this.#cache[statement]       
+                
             switch(statementSeg[0].toLowerCase()) {
-                case '$if':
+                case '#if':
                 case ':else':
-                    console.log("AFTER")
-                    console.log(value)
-                    console.log("AFTER\r\n")
-                    return this.#If(htmlSegments, value, variables)
-                case '$loop':
-                    return this.#Loop(htmlSegments, statementSeg, variables)
+                    return this.#If(htmlSegments, statement, value, input)
+                case '#loop':
+                    return this.#Loop(htmlSegments, statement, statementSeg, input)
             }
     
             return ''
@@ -287,18 +287,17 @@ class HtmlTemplate
 
 
     //For loops
-    #Loop(htmlSegments, [command, variable, as, pipeVariable, index], variables) {
+    #Loop(htmlSegments, statement,  [command, variable, as, pipedVariable, index], input) {
 
         try
         {
             let html = ''
 
-            let data = variables[variable] ? variables[variable] : this.#input[variable]        
+            let data = input[variable]        
     
-            if(pipeVariable[pipeVariable.length - 1] === ',') pipeVariable = pipeVariable.substring(0, pipeVariable.length - 1)
+            if(pipedVariable[pipedVariable.length - 1] === ',') pipedVariable = pipedVariable.substring(0, pipedVariable.length - 1)
     
-            if(pipeVariable in this.#input || pipeVariable in variables) throw new Error('Duplicate variables are not allowed')
-            if(index in this.#input || index in variables) throw new Error('Duplicate variables are not allowed')
+            if(pipedVariable in input || index in input) throw new Error('Duplicate variables are not allowed')
 
             for(let i = 0; i<data.length; i++) {
     
@@ -306,27 +305,27 @@ class HtmlTemplate
                 
                 if(isObject) {
     
-                    let nodes = this.#objectTraversal(data[i], pipeVariable)
-    
+                    let nodes = objectPaths(data[i], pipedVariable)
+
                     if(!nodes) throw new Error('Duplicate variables are not allowed')
     
-                    variables = {...variables, ...nodes}
+                    input = {...input, ...nodes}
                 }
                                 
-                variables[pipeVariable] = data[i]
+                input[pipedVariable] = data[i]
     
-                if(index) variables[index] = i
+                if(index) input[index] = i
     
-                const result = ValidateVariableNames(variables)
+                const result = ValidateVariableNames(input)
     
                 if(result) throw new SyntaxError(result)
     
-                const scannedHtml = this.#childSegments(htmlSegments, variables)
+                const scannedHtml = this.#Segments(htmlSegments, statement, input)
     
                 if(!scannedHtml && scannedHtml !== '') return false
     
                 //Delete this variable since shallow copy won't
-                delete variables[pipeVariable]
+                delete input[pipedVariable]
                 
                 html += scannedHtml
             }
@@ -341,11 +340,11 @@ class HtmlTemplate
     }
 
     //For if statements
-    #If(htmlSegments, script, variables = {}) {
+    #If(htmlSegments, statement, script, input) {
         try
         {
-            if(eval(script)) 
-                return this.#childSegments(htmlSegments, variables)
+            if(generateIfStatement(script)(input)) 
+                return this.#Segments(htmlSegments, statement, input)
             else {
                 if(!htmlSegments.else) return ''
 
@@ -353,7 +352,7 @@ class HtmlTemplate
                 const elseStatement = Object.keys(htmlSegments.else)[0]
 
 
-                return this.#ExecuteStatements(htmlSegments.else[elseStatement], elseStatement, variables)
+                return this.#ExecuteStatements(htmlSegments.else[elseStatement], elseStatement, input)
             }
         }
         catch(err) {
@@ -363,7 +362,7 @@ class HtmlTemplate
         
     }
 
-    #childSegments(htmlSegments, variables) {
+    #Segments(htmlSegments, statement, input) {
         try
         {
             const content = htmlSegments.content
@@ -377,7 +376,7 @@ class HtmlTemplate
             for(let i = 0; i<scopeSegments.length; i++) {
                 if(scopeSegments[i] === 'content' || scopeSegments[i] === 'else') continue
     
-                const executedStatement = this.#ExecuteStatements(htmlSegments[scopeSegments[i]], scopeSegments[i], variables)
+                const executedStatement = this.#ExecuteStatements(htmlSegments[scopeSegments[i]], scopeSegments[i], input)
     
                 if(!executedStatement && executedStatement !== '') return false
     
@@ -385,29 +384,36 @@ class HtmlTemplate
     
                 html += executedStatement + content[segmentIndex]
             }
-    
-            const entries = Object.entries(variables)
-    
-            for(let i = 0; i<entries.length; i++) {
-    
-                const [ name, value ] = entries[i]
-    
-    
-                html = html.replace(new RegExp(`{{${name}}}`, 'g'), value)
-    
-                if(this.#attributedVariables[name]) {
-    
-                    const attributes = this.#attributedVariables[name]
-    
-                    for(let i = 0; i<attributes.length; i++) {
-                        const newValue = this.#Attributes(attributes[i], value)
 
-                        if(!newValue) throw new Error(`${attributes[i] === '#' ? 'Escape' : 'Trim'} attribute can only be used on strings, "${name}" is not a string`)
+            //Cancel early if there are no scope made variables
+            if(!this.#scopeVariables[statement]) return html
 
-                        html = html.replace(new RegExp(`{{${attributes[i]}${name}}}`, 'g'), newValue)
-                    }
-                        
-                }   
+
+            const keys = Object.keys(this.#scopeVariables[statement])
+
+            for(let i = 0; i<keys.length; i++) {
+    
+                let name = keys[i]
+
+                const attribute = name[0]
+
+                const hasAttribute = attribute === '%' || attribute === '@'
+    
+    
+                if(!hasAttribute)
+                    html = html.replace(new RegExp(`{{${name}}}`, 'g'), input[name])
+                else if(hasAttribute) {
+    
+                    name = name.slice(1)
+
+                    if(!(name in input)) throw new Error(`Variable "${name}" does not exist`)
+
+                    const newValue = this.#Attributes(attribute, input[name])
+
+                    if(!newValue) throw new Error(`${_ATTRIBUTES_[attribute]} attribute can only be used on strings, "${name}" is not a string`)
+
+                    html = html.replace(new RegExp(`{{${attribute}${name}}}`, 'g'), newValue)
+                } 
             }
     
             return html
@@ -425,55 +431,11 @@ class HtmlTemplate
             return false
          
         switch(attribute) {
-            case '#':
-                return this.#Escape(s)
+            case '%':
+                return Escape(s)
             case '@':
                 return s.trim()
         }
-    }
-
-    #Escape(s) {
-
-        const targets = {
-            '>': '&gt;',
-            '<': '&lt;',
-
-            '&': '&amp;',
-
-            "'": '&#39;',
-            '"': '&quot;'
-        };
-
-        let escaped = ``
-
-        for(let i = 0; i<s.length; i++) 
-            escaped += targets[s[i]] ? targets[s[i]] : s[i]  
-
- 
-        return escaped
-    }
-
-    #objectTraversal(obj, path, newVariables = {}) {
-        if(typeof obj !== 'object' || Array.isArray(obj)) {
-
-            if(path in this.#input) 
-                return false
-
-            newVariables[path] = obj
-
-            return newVariables
-        }
-    
-        const keys = Object.keys(obj)
-    
-        for(let i = 0; i<keys.length; i++) {
-            let result = this.#objectTraversal(obj[keys[i]], path + '.' + keys[i], newVariables)
-
-            if(!result) return false
-        }
-
-
-        return newVariables
     }
 }
 

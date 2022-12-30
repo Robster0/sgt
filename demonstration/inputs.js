@@ -1,9 +1,9 @@
 const data_input = {
     posts: [
-        {id: 0, user: "                  robin@gmail.se                     ", content: "<script>while(true) { console.log('bro'); } </script>"},
+        {id: 0, user: "                  robin@gmail.se                     ", content: "<script>alert('damn')</script>"},
         {id: 1, user: "robin.andreasson@metabytes.se", content: "With damn good business impact"},
         {id: 2, user: "ludwig@ludvig.se", content: "Ludwig"},
-        {id: 3, user: "smedberg.tor@rot.se", content: "root user (not)"}
+        {id: 3, user: "smedberg.tor@rot.se", content: "root user (not)"},
     ],
     comments: [
         {id: 1, postId: 1, user: "test-user-1", content: "test-content-1"},

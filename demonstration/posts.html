@@ -9,15 +9,15 @@
 </head>
 <body>
     <div class="posts">
-        {{ $loop posts as p }}
+        {{ #loop posts as p }}
             <div class="post">
                 <h1 class="post-user">{{ @p.user }}</h1>
-                {{ #p.content }}
+                {{ %p.content }}
                 <p>ID: {{ p.id }}</p>
             </div>
             <div class="comments">
-                {{ $loop comments as c }}
-                        {{ $if c.postId eq p.id }}
+                {{ #loop comments as c }}
+                        {{ #if c.postId eq p.id }}
                             <div class="comment">
                                 <h1 class="comment-content">{{ c.user }}</h1>
                                 <textarea class="comment-content" readonly>{{ c.content }}</textarea>
@@ -27,7 +27,7 @@
                                     <p>Post ID: {{ c.postId }}</p>
                                 </div>
                             </div>                    
-                        {{  /if }}                      
+                        {{  /if }} 
                 {{ /loop }}
             </div>
         {{ /loop }}
