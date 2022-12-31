@@ -1,8 +1,8 @@
-# hte
+# h-te
 
-html template engine
+easy to use html template engine
 ```js
-const hte = require('hte')
+const hte = require('h-te')
 
 //Compile string
 hte.Compile("<h1>{{ name }}</h1>", { name: 'example-name' })// output > '<h1>example-name</h1>'
