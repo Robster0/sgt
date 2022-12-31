@@ -1,8 +1,8 @@
 
 #Demonstration
-demonstration/node_modules
-demonstration/package-lock.json
-demonstration/package.json
+example/node_modules
+example/package-lock.json
+example/package.json
 
 #Library stuff
 src/package.json
