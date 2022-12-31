@@ -1,9 +1,4 @@
 
-#Demonstration
-example/node_modules
-example/package-lock.json
-example/package.json
-
-#Library stuff
+#npm stuff
 src/package.json
 src/readme.md

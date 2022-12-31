@@ -5,7 +5,7 @@ html template engine
 const hte = require('hte')
 
 //Compile string
-hte.Compile("{{ name }}", { name: 'example-name' })
+hte.Compile("<h1>{{ name }}</h1>", { name: 'example-name' }) > '<h1>example-name</h1>'
 //Compile file
 hte.CompileFile('path/to/file/example.html', example-object)
 ```

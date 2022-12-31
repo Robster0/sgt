@@ -1,5 +1,5 @@
 const MuxJS = require('muxjs-http')
-const hte = require('../src/index')
+const hte = require('hte')
 
 const { home_input, posts_input, users_input  } = require('./inputs')
 
