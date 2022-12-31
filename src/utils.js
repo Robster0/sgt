@@ -99,7 +99,7 @@ function translateScript(script, input) {
     
         if(isStringLiteral) continue
     
-        if(!script[i].match(/\s|\(|\)|,|!|\+|-/gms)) {
+        if(!script[i].match(/\s|\(|\)|,|!/gms)) {
             variable += script[i]
     
         } else {

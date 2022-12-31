@@ -36,6 +36,8 @@ const { Validity, ValidateVariableNames, ValidateScopes } = require('./validity/
 const { generateIfStatement, objectPaths, Escape, getDir, _ATTRIBUTES_, _STATEMENT_ } = require('./utils.js');
 
 
+/*
+Future update
 
 let _OPENING_OUTER_DELIMITER_ = '{'
 let _OPENING_INNER_DELIMITER_ = '{'
@@ -44,8 +46,13 @@ let _CLOSING_OUTER_DELIMITER_ = '}'
 let _CLOSING_INNER_DELIMITER_ = '}'
 
 let _OPENING_STATEMENT_DELIMITER_ = '#'
-let _CLOSING_STATEMENT_DELIMITER_ = '#' 
+let _CLOSING_STATEMENT_DELIMITER_ = '/' 
 
+let _ELSE_STATEMENT_DELIMITER = ':'
+
+let _INCLUDE_STATEMENT_DELIMITER = '+'
+
+*/
 
 
 let scopeVariables = {}
@@ -164,7 +171,7 @@ function Scan(html, input, stack = [], htmlSegments = {}, startIndex = 0) {
                 i++
 
                 //Offset for else statements, its a stupid solution to a problem (I should start the process of refactoring this (I won't))
-                const offset = statement.length + 5
+                const offset = statement.length + 4
 
                 //Trim the white space from the outer sides of the statement 
                 if(statement) statement = statement.trim()
@@ -182,13 +189,17 @@ function Scan(html, input, stack = [], htmlSegments = {}, startIndex = 0) {
                 //Get the latest statement from the stack
                 const latest = stack[stack.length - 1]
 
-                //If the statement is a variable and is inside the this.#input variable 
+                //If the statement is a variable and is inside the input variable 
                 if(isVariable && statement in input) {
 
                     content += hasAttribute ? Attributes(statementType, input[statement]) : input[statement]
 
                 }
                 else if(isVariable) { //if the statement is a variable 
+
+                    if(stack.length === 0) 
+                        throw new Error(`Variable "${statement}" does not exist`)
+
                     content += `{{${hasAttribute ? statementType : ''}${statement}}}`
 
                     if(!scopeVariables[latest])
@@ -270,8 +281,9 @@ function Scan(html, input, stack = [], htmlSegments = {}, startIndex = 0) {
                         htmlSegments = {}   
                         scopeVariables = {}
                     }
-
+                    
                     return [i - (latest[0] === ':' ? offset : 0), output, html, stack]
+
                 } else if (statementType === '+') {
 
                     if(statement.slice(0, 8) !== '+include') throw new SyntaxError('include statement has to start with "+include"')
@@ -290,11 +302,10 @@ function Scan(html, input, stack = [], htmlSegments = {}, startIndex = 0) {
 
                     const newHtml = fs.readFileSync(path)
 
-                    html = html.slice(0, i + 1 - (offset - 1)) + newHtml + html.slice(i + 1, html.length)
+                    html = html.slice(0, i + 1 - offset) + newHtml + html.slice(i + 1, html.length)
 
-                    i -= (offset - 1)
+                    i -= offset
                 }
-
 
                 statement = ''
                 content = ''
@@ -303,7 +314,6 @@ function Scan(html, input, stack = [], htmlSegments = {}, startIndex = 0) {
                 if(mode === 'write')
                     statement += html[i]
                 else {
-                    
                     content += html[i]
                 }
                     
@@ -428,7 +438,7 @@ function If(htmlSegments, statement, script, input) {
         }
     }
     catch(err) {
-        console.log(new SyntaxError(`Invalid if-statement syntax at "${statement}"`))
+        console.log(new Error(`Invalid if-statement at "${statement}"`))
         return false
     }
     
@@ -464,7 +474,6 @@ function Segments(htmlSegments, statement, input) {
         //Cancel early if there are no scope made variables
         if(!scopeVariables[statement]) return output
 
-
         const keys = Object.keys(scopeVariables[statement])
 
         for(let i = 0; i<keys.length; i++) {
@@ -475,8 +484,12 @@ function Segments(htmlSegments, statement, input) {
 
             const hasAttribute = attribute === '%' || attribute === '@'
 
-            if(!hasAttribute)
+
+            if(!hasAttribute) {
+                if(!(name in input)) throw new Error(`Variable "${name}" does not exist`)
+
                 output = output.replace(new RegExp(`{{${name}}}`, 'g'), input[name])
+            } 
             else if(hasAttribute) {
 
                 name = name.slice(1)

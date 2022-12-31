@@ -1,0 +1,16 @@
+<div class="comments">
+    {{ #loop comments as comment }}
+        {{ #if comment.postId eq post.id }}
+            <div class="comment">
+                <h1 class="comment-content">{{ @comment.user }}</h1> <!-- add the at sign to trim the output  -->
+                <p>{{ %comment.content }}</p> <!-- add the percent sign to escape the output -->
+    
+                <div class="comment-info">
+                    <p>Comment ID: {{ comment.id }}</p>
+                    <p>Post ID: {{ comment.postId }}</p>
+                </div>
+            </div>                    
+        {{  /if }} 
+    {{ /loop }}   
+</div>
+

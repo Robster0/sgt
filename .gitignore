@@ -1,5 +1,9 @@
 
+#Demonstration
+demonstration/node_modules
+demonstration/package-lock.json
+demonstration/package.json
 
-/demonstration/node_modules
-/demonstration/package-lock.json
-/demonstration/package.json
+#Library stuff
+src/package.json
+src/readme.md
