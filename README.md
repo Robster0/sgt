@@ -1,4 +1,4 @@
-# h-te
+# hte
 
 easy to use html template engine
 ```js
@@ -12,7 +12,7 @@ hte.CompileFile('path/to/file/example.html', example-object)
 
 ## Installation
 ```
-$ npm install hte
+$ npm install h-te
 ```
 
 ## example
