@@ -2,7 +2,7 @@
 
 const { translateScript } = require('../utils.js')
 
-function Validity(statementSeg, statement, input, cache) {
+function Validity(statementSeg, statement, input) {
     try
     {
         const command = statementSeg[0].toLowerCase()

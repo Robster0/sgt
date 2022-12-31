@@ -4,8 +4,15 @@
 * @type {object} list of all the variable attribute and their name
 */
 const _ATTRIBUTES_ = {
-    '#': 'Escape',
+    '%': 'Escape',
     '@': 'Trim'
+}
+
+const _STATEMENT_ = {
+    '+': true,
+    '#': true,
+    ':': true,
+    '/': true,
 }
 
 const SYNTAX = {
@@ -45,6 +52,12 @@ const NOTALLOWED = {
     'false': 1,
 }
 
+const STRINGDELIMITERS = {
+    '`': '`',
+    '"': '"',
+    "'": "'"
+}
+
 
 
 /**
@@ -69,15 +82,24 @@ function translateScript(script, input) {
     let data = []
     let variable = ''
 
-    let isString = false
+    let isStringLiteral = false
+    let stringDelimiter = null
         
     for(let i = 0; i<script.length; i++) {
-        if(script[i] === '`')
-            isString = isString ? false : true
+        if(script[i] === STRINGDELIMITERS[script[i]] && !isStringLiteral) {
+            isStringLiteral = true
+
+            stringDelimiter = script[i]
+        }      
+        else if(script[i] === stringDelimiter && isStringLiteral) {
+            isStringLiteral = false
+
+            stringDelimiter = null
+        }
     
-        if(isString) continue
+        if(isStringLiteral) continue
     
-        if(!script[i].match(/\s|\(|\)|,/gms)) {
+        if(!script[i].match(/\s|\(|\)|,|!|\+|-/gms)) {
             variable += script[i]
     
         } else {
@@ -92,7 +114,8 @@ function translateScript(script, input) {
         }
     }
 
-    if(isString) throw new TypeError('backtick is never closed')
+
+    if(isStringLiteral) throw new TypeError('string literal is never closed')
 
     let offset = 0
 
@@ -172,6 +195,17 @@ function Escape(s) {
     return escaped
 }
 
+function getDir(path) {
+    
+    for(let i = path.length; i>=0; i--) {
+        if(path[i] !== '/' && path[i] !== '\\') continue
+    
+        return path.slice(0, i)
+    }
+
+    return false 
+}
 
 
-module.exports = { generateIfStatement, translateScript, objectPaths, Escape, _ATTRIBUTES_, SYNTAX, NOTALLOWED }
+
+module.exports = { generateIfStatement, translateScript, objectPaths, Escape, getDir, _ATTRIBUTES_, _STATEMENT_, SYNTAX, NOTALLOWED }
