@@ -1,5 +1,5 @@
 const MuxJS = require('muxjs-http')
-const hte = require('hte')
+const hte = require('h-te')
 
 const { home_input, posts_input, users_input  } = require('./inputs')
 
@@ -38,6 +38,3 @@ function posts_handler(w, r) {
 function users_handler(w, r) {
     w.Send(hte.CompileFile(__dirname + '/html/users.html', users_input))
 }
-
-
-
