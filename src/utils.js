@@ -66,10 +66,17 @@ const STRINGDELIMITERS = {
 */
 function generateIfStatement(script) {
     return new Function('input', `
-        if( ${script} )
-            return true
-        
-        return false   
+        try
+        {
+            if( ${script} )
+                return true
+            
+            return false
+        }
+        catch(err) {
+            console.log(err)
+            return false
+        }
     `)
 }
 

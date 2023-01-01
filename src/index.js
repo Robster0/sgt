@@ -1,9 +1,8 @@
 /*
 
-Html-tempalate engine that heavily focuses on the idea of no "with" statement (even tho it would definitely be faster)
+template engine that heavily focuses on not using "with" statement (even tho it would be faster and easier)
 
 Syntax:
-
 
 #: statement
 
@@ -14,55 +13,35 @@ Syntax:
 % (only on variables): escape
 @: trim white space
 
-(.*?test.*?)}
-
 */
 
 
 /**
-* Embedded JavaScript templating engine.
+* Seagull templates.
 *
-* @module HtmlTemplateEngine
+* @module sgt
 * @public
 */
 
 
-const TITLE = 'HtmlTemplate'
-const VERSION = '1.0.0' //require('../package.json')?.version ?? '1.0.0';
+const TITLE = 'sgt'
+const VERSION = require('./package.json').version
 
 const fs = require('fs');
+const pathNode = require('path')
 
 const { Validity, ValidateVariableNames, ValidateScopes } = require('./validity/validity.js')
 const { generateIfStatement, objectPaths, Escape, getDir, _ATTRIBUTES_, _STATEMENT_ } = require('./utils.js');
-
-
-/*
-Future update
-
-let _OPENING_OUTER_DELIMITER_ = '{'
-let _OPENING_INNER_DELIMITER_ = '{'
-
-let _CLOSING_OUTER_DELIMITER_ = '}'
-let _CLOSING_INNER_DELIMITER_ = '}'
-
-let _OPENING_STATEMENT_DELIMITER_ = '#'
-let _CLOSING_STATEMENT_DELIMITER_ = '/' 
-
-let _ELSE_STATEMENT_DELIMITER = ':'
-
-let _INCLUDE_STATEMENT_DELIMITER = '+'
-
-*/
-
 
 let scopeVariables = {}
 let statement_cache = {}
 
 /** @type {string} */
 let defaultErrorResponse
-/** @type {string} */
-let relativePath
-
+/**@type {string[]} */
+let relativePaths = []
+/**@type {number[]} */
+let includeScopes = []
 
 /**
 * @public
@@ -93,6 +72,9 @@ function Compile(str, input, der = '') {
 
         if(error) throw new SyntaxError(error)
 
+        if(relativePaths.length === 0)
+            relativePaths.push(require.main.path)
+
         defaultErrorResponse = der
 
         const newInput = {...input}
@@ -111,6 +93,9 @@ function Compile(str, input, der = '') {
 
         /**@type {string | boolean} */
         const output = Scan(str, newInput)
+
+        
+        relativePaths = []
         
         //If error
         if(!output) return defaultErrorResponse
@@ -141,7 +126,7 @@ function CompileFile(path, input, der = '') {
 
         const html = fs.readFileSync(path).toString('utf-8')
         
-        relativePath = getDir(path)
+        relativePaths.push(getDir(path))
 
         return Compile(html, input, der)
     }
@@ -161,6 +146,12 @@ function Scan(html, input, stack = [], htmlSegments = {}, startIndex = 0) {
         
         for(let i = startIndex; i<html.length; i++) 
         {
+            if(i > includeScopes[includeScopes.length - 1]) {
+                includeScopes.pop()
+                relativePaths.pop()
+            } 
+
+
             if(html[i] === '{' && html[i + 1] === '{') {
                 mode = 'write'
                 i++
@@ -295,14 +286,22 @@ function Scan(html, input, stack = [], htmlSegments = {}, startIndex = 0) {
 
                     let path = result.filter(e => e)[2]
 
-                    //if relative path
-                    if(!fs.existsSync(path)) {
-                        path = relativePath + ((path[0] === '/' || path[0] === '\\') ? path : '/' + path)
+                    if(pathNode.isAbsolute(path)) {
+                        relativePaths.push(getDir(path))
+                    } else  {
+                        relativePaths.push(relativePaths[relativePaths.length - 1]+'/'+getDir(path))
+
+                        path = relativePaths[relativePaths.length - 2] + ((path[0] === '/' || path[0] === '\\') ? path : '/' + path)
                     }
 
                     const newHtml = fs.readFileSync(path)
 
                     html = html.slice(0, i + 1 - offset) + newHtml + html.slice(i + 1, html.length)
+
+                    for(let i = 0; i<includeScopes.length; i++)
+                        includeScopes[i] += newHtml.length - offset
+
+                    includeScopes.push(i + 1 - offset + newHtml.length)
 
                     i -= offset
                 }
