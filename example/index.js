@@ -1,5 +1,5 @@
 const MuxJS = require('muxjs-http')
-const hte = require('h-te')
+const sgts = require('sgts')
 
 const { home_input, posts_input, users_input  } = require('./inputs')
 
@@ -28,13 +28,13 @@ r.HandleFunc('/users', users_handler).Method('GET')
 
 
 function home_handler(w, r) {
-    w.Send(hte.CompileFile(__dirname + '/html/home.html', home_input))
+    w.Send(sgts.CompileFile(__dirname + '/html/home.html', home_input))
 }
 
 function posts_handler(w, r) {
-    w.Send(hte.CompileFile(__dirname + '/html/posts.html', posts_input))
+    w.Send(sgts.CompileFile(__dirname + '/html/posts.html', posts_input))
 }
 
 function users_handler(w, r) {
-    w.Send(hte.CompileFile(__dirname + '/html/users.html', users_input))
+    w.Send(sgts.CompileFile(__dirname + '/html/users.html', users_input))
 }

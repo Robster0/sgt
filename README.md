@@ -1,20 +1,29 @@
-# hte
+# {Seagull Templates}
 
-easy to use html template engine
+An easy-to-use template engine
+
 ```js
-const hte = require('h-te')
+const sgt = require('sgt')
 
 //Compile string
-hte.Compile("<h1>{{ name }}</h1>", { name: 'example-name' })// output > '<h1>example-name</h1>'
+sgt.Compile("<h1>{{ name }}</h1>", { name: 'example-name' })
+// => "<h1>example-name</h1>"
+
 //Compile file
-hte.CompileFile('path/to/file/example.html', example-object)
+sgt.CompileFile('path/to/file/example.html', { name: 'example-name' })
 ```
 
 ## Installation
 ```
-$ npm install h-te
+$ npm install sgt
 ```
 
-## example
+# Features
+* Loop, if and else logic
+* Escape outputs with %
+* Trim outputs with @
+* Includes (relative and absolute path)
+* Compatible with MuxJS
 
-https://github.com/Robster0/hte/tree/main/example
+# Example
+https://github.com/Robster0/sgt/tree/main/example
