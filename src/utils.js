@@ -78,7 +78,7 @@ exports.generateIfStatement = function(script) {
         }
         catch(err) {
             console.log(err)
-            return false
+            return err
         }
     `)
 }

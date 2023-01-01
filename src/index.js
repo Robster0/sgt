@@ -419,7 +419,11 @@ function Loop(htmlSegments, statement,  [command, variable, as, pipedVariable, i
 function If(htmlSegments, statement, script, input) {
     try
     {
-        if(generateIfStatement(script)(input)) 
+        const result = generateIfStatement(script)(input)
+
+        if(typeof result !== 'boolean') return false
+
+        if(result) 
             return Segments(htmlSegments, statement, input)
         else {
             if(!htmlSegments.else) return ''
