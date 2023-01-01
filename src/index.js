@@ -54,11 +54,11 @@ let defaultErrorResponse
 let relativePaths = []
 
 /**
-* @public
+* Compiles Seagull templates
 * @param {string} str string that will be compiled
 * @param {object} input variables used inside the string
 * @param {string} der (default error response) default output if an error occurs during compiling 
-* @returns compiled string
+* @returns {string} compiled output
 */
 exports.Compile = function(str, input, der = '') {
     try
@@ -121,11 +121,11 @@ exports.Compile = function(str, input, der = '') {
 }
 
 /** 
-* @public
+* Compiles Seagull templates within a file
 * @param {string} path relative or absolute path to the html file
 * @param {object} input variables used inside the html
 * @param {string} der (default error response) default output if an error occurs during compiling 
-* @returns compiled string
+* @returns {string} compiled output
 */
 exports.CompileFile = function(path, input, der = '') {
     try

@@ -1,16 +1,16 @@
-# {Seagull Templates}
+# {{ Seagull Templates }}
 
 An easy-to-use template engine
 
 ```js
-const sgt = require('sgt')
+const sgt = require("sgt")
 
-//Compile string
-sgt.Compile("<h1>{{ name }}</h1>", { name: 'example-name' })
-// => "<h1>example-name</h1>"
+//Compile a string
+sgt.Compile("<h1>{{ name }}</h1>", { name: "Seagull" })
+// => "<h1>Seagull</h1>"
 
-//Compile file
-sgt.CompileFile('path/to/file/example.html', { name: 'example-name' })
+//Compile a file
+sgt.CompileFile("path/to/file/file.html", { name: "Seagull" })
 ```
 
 ## Installation
