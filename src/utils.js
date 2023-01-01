@@ -1,14 +1,17 @@
 "use strict"
 
+const path_node = require('path')
+const fs = require('fs')
+
 /** 
 * @type {object} list of all the variable attribute and their name
 */
-const _ATTRIBUTES_ = {
+exports._ATTRIBUTES_ = {
     '%': 'Escape',
     '@': 'Trim'
 }
 
-const _STATEMENT_ = {
+exports._STATEMENT_ = {
     '+': true,
     '#': true,
     ':': true,
@@ -64,7 +67,7 @@ const STRINGDELIMITERS = {
 * @param {string} script 
 * @returns Function that returns if the script executed inside an if statement is true or not
 */
-function generateIfStatement(script) {
+exports.generateIfStatement = function(script) {
     return new Function('input', `
         try
         {
@@ -82,9 +85,10 @@ function generateIfStatement(script) {
 
 /**
 * @param {string} script 
+* @param {object} input 
 * @returns translated script
 */
-function translateScript(script, input) {
+exports.translateScript = function(script, input) {
 
     let data = []
     let variable = ''
@@ -161,7 +165,13 @@ function swap(v, script, offset) {
 
 }
 
-function objectPaths(obj, path, newInput = {}) {
+/**
+* @param {object} obj object to be traversed 
+* @param {string} path the current path
+* @param {object} newInput where the paths will be stored 
+* @returns object with all the paths
+*/
+exports.objectPaths = function(obj, path, newInput = {}) {
     if(typeof obj !== 'object' || Array.isArray(obj)) {
 
         newInput[path] = obj
@@ -172,7 +182,7 @@ function objectPaths(obj, path, newInput = {}) {
     const keys = Object.keys(obj)
 
     for(let i = 0; i<keys.length; i++) {
-        let result = objectPaths(obj[keys[i]], path + '.' + keys[i], newInput)
+        let result = exports.objectPaths(obj[keys[i]], path + '.' + keys[i], newInput)
 
         if(!result) return false
     }
@@ -180,8 +190,11 @@ function objectPaths(obj, path, newInput = {}) {
 
     return newInput
 }
-
-function Escape(s) {
+/**
+* @param {string} s 
+* @returns escaped string 
+*/
+exports.Escape = function(s) {
 
     const targets = {
         '>': '&gt;',
@@ -201,8 +214,35 @@ function Escape(s) {
 
     return escaped
 }
+/**
+* resolve path
+* @param {string} path 
+* @param {string[]} arr 
+*/
+exports.resolveIncludePath = function(path, arr) {
 
-function getDir(path) {
+    if(path_node.isAbsolute(path)) {
+        arr.push(exports.getDir(path))
+    } else  {
+
+        for(let i = 0; i<arr.length; i++) {
+            if (!fs.existsSync(arr[i]+'/'+path)) continue
+
+            path = path_node.resolve(arr[i]+'/'+path)
+
+            arr.push(exports.getDir(path))
+
+            break
+        }
+    }
+
+    return [ path, arr ]
+}
+/**
+* gets the directory of the current path
+* @param {string} path 
+*/
+exports.getDir = function(path) {
     
     for(let i = path.length; i>=0; i--) {
         if(path[i] !== '/' && path[i] !== '\\') continue
@@ -210,9 +250,5 @@ function getDir(path) {
         return path.slice(0, i)
     }
 
-    return false 
+    return ''
 }
-
-
-
-module.exports = { generateIfStatement, translateScript, objectPaths, Escape, getDir, _ATTRIBUTES_, _STATEMENT_, SYNTAX, NOTALLOWED }

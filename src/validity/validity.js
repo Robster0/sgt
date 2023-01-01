@@ -2,7 +2,14 @@
 
 const { translateScript } = require('../utils.js')
 
-function Validity(statementSeg, statement, input) {
+/**
+* validates the statement
+* @param {*} statementSeg statement split by whitespace
+* @param {*} statement current statement
+* @param {*} input the input
+* @returns {boolean | string}
+*/
+exports.Validity = function(statementSeg, statement, input) {
     try
     {
         const command = statementSeg[0].toLowerCase()
@@ -41,7 +48,7 @@ function Validity(statementSeg, statement, input) {
         
         let index = statement.search(iftype)      
 
-        return translateScript(statement.substring(index + iftype.length, statement.length) + ' ', input)
+        return translateScript(statement.slice(index + iftype.length, statement.length) + ' ', input)
     }
     catch(err) {
         console.log(err)
@@ -50,8 +57,12 @@ function Validity(statementSeg, statement, input) {
 }
 
 
-
-function ValidateVariableNames(input) {
+/**
+* validates if the keys inside input are valid
+* @param {object} input 
+* @returns {string | null}
+*/
+exports.ValidateVariableNames = function(input) {
     const keys = Object.keys(input)
 
     for(let i = 0; i<keys.length; i++) {
@@ -64,8 +75,13 @@ function ValidateVariableNames(input) {
     return null
             
 }
-
-function ValidateScopes(stack, command) {
+/**
+* checks if the scope is valid
+* @param {string[]} stack 
+* @param {string} command 
+* @returns {boolean} if scope is valid
+*/
+exports.ValidateScopes = function(stack, command) {
 
     const latest = stack[stack.length - 1].split(' ')[0]
 
@@ -89,6 +105,3 @@ function ValidateScopes(stack, command) {
             return false
     }  
 }
-
-
-module.exports = { Validity, ValidateVariableNames, ValidateScopes }

@@ -1,3 +1,5 @@
+"use strict"
+
 /*
 
 template engine that heavily focuses on not using "with" statement (even tho it would be faster and easier)
@@ -11,6 +13,7 @@ Syntax:
 ":":  else statement 
 
 % (only on variables): escape
+
 @: trim white space
 
 */
@@ -23,15 +26,24 @@ Syntax:
 * @public
 */
 
+/**
+* Library title
+* @readonly
+* @type {string}
+*/
+exports.title = 'sgt'
 
-const TITLE = 'sgt'
-const VERSION = require('./package.json').version
+/**
+* Library version
+* @readonly
+* @type {string}
+*/
+exports.version = require('./package.json').version
 
 const fs = require('fs');
-const pathNode = require('path')
 
 const { Validity, ValidateVariableNames, ValidateScopes } = require('./validity/validity.js')
-const { generateIfStatement, objectPaths, Escape, getDir, _ATTRIBUTES_, _STATEMENT_ } = require('./utils.js');
+const { generateIfStatement, objectPaths, Escape, resolveIncludePath, getDir, _ATTRIBUTES_, _STATEMENT_ } = require('./utils.js');
 
 let scopeVariables = {}
 let statement_cache = {}
@@ -40,8 +52,6 @@ let statement_cache = {}
 let defaultErrorResponse
 /**@type {string[]} */
 let relativePaths = []
-/**@type {number[]} */
-let includeScopes = []
 
 /**
 * @public
@@ -50,7 +60,7 @@ let includeScopes = []
 * @param {string} der (default error response) default output if an error occurs during compiling 
 * @returns compiled string
 */
-function Compile(str, input, der = '') {
+exports.Compile = function(str, input, der = '') {
     try
     {
 
@@ -117,7 +127,7 @@ function Compile(str, input, der = '') {
 * @param {string} der (default error response) default output if an error occurs during compiling 
 * @returns compiled string
 */
-function CompileFile(path, input, der = '') {
+exports.CompileFile = function(path, input, der = '') {
     try
     {
         if(typeof path !== 'string') {
@@ -128,7 +138,7 @@ function CompileFile(path, input, der = '') {
         
         relativePaths.push(getDir(path))
 
-        return Compile(html, input, der)
+        return exports.Compile(html, input, der)
     }
     catch(err) {
         console.log(err)
@@ -146,12 +156,6 @@ function Scan(html, input, stack = [], htmlSegments = {}, startIndex = 0) {
         
         for(let i = startIndex; i<html.length; i++) 
         {
-            if(i > includeScopes[includeScopes.length - 1]) {
-                includeScopes.pop()
-                relativePaths.pop()
-            } 
-
-
             if(html[i] === '{' && html[i + 1] === '{') {
                 mode = 'write'
                 i++
@@ -277,31 +281,21 @@ function Scan(html, input, stack = [], htmlSegments = {}, startIndex = 0) {
 
                 } else if (statementType === '+') {
 
-                    if(statement.slice(0, 8) !== '+include') throw new SyntaxError('include statement has to start with "+include"')
+                    const result = statement.match(/(\+include(\s+))(('(.+?)')|("(.+?)")|(`(.+?)`))/)
 
- 
-                    const result = statement.match(/("(.+?)")|('(.+?)')|(`(.+?)`)/)
+                    if(!result) 
+                        throw new SyntaxError(`include statement " ${statement} " has the wrong format, the correct format is: " +include 'some/path/file.html' "`)
 
-                    if(!result) throw new TypeError(`No written path or mixed up string delimiters on include statement ( ${statement} )`)
+                    let path = result.filter(e => e)[5]
 
-                    let path = result.filter(e => e)[2]
+                    const [ resolvedPath, newArr ] = resolveIncludePath(path, relativePaths)
 
-                    if(pathNode.isAbsolute(path)) {
-                        relativePaths.push(getDir(path))
-                    } else  {
-                        relativePaths.push(relativePaths[relativePaths.length - 1]+'/'+getDir(path))
-
-                        path = relativePaths[relativePaths.length - 2] + ((path[0] === '/' || path[0] === '\\') ? path : '/' + path)
-                    }
+                    path = resolvedPath
+                    relativePaths = newArr
 
                     const newHtml = fs.readFileSync(path)
 
                     html = html.slice(0, i + 1 - offset) + newHtml + html.slice(i + 1, html.length)
-
-                    for(let i = 0; i<includeScopes.length; i++)
-                        includeScopes[i] += newHtml.length - offset
-
-                    includeScopes.push(i + 1 - offset + newHtml.length)
 
                     i -= offset
                 }
@@ -337,7 +331,7 @@ function Scan(html, input, stack = [], htmlSegments = {}, startIndex = 0) {
 function ExecuteStatements(htmlSegments, statement, input) {
     try
     {
-        const statementSeg = statement.split('-DUPLICATE-')[0].split(' ').filter(e => e)
+        const statementSeg = statement.split('-DUPLICATE-')[0].split(/\s+/g).filter(e => e)
 
         let value
 
@@ -523,22 +517,3 @@ function Attributes(attribute, s) {
             return s.trim()
     }
 }
-
-/**
-* Library title
-* @readonly
-* @type {string}
-*/
-exports.title = TITLE
-
-/**
-* Library version
-* @readonly
-* @type {string}
-*/
-exports.version = VERSION
-
-
-
-exports.Compile = Compile
-exports.CompileFile = CompileFile
