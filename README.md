@@ -28,8 +28,8 @@ sgt.Compile("<h1>{{ name }}</h1>", { name: "Seagull" })
 // => "<h1>Seagull</h1>"
 
 //Output tag "&=" like mentioned above escapes the output
-sgt.Compile("<h1>{{&= tag }}</h1>", { tag: "<script>alert('Seagull!')</script>" })
-// => "<h1>&lt;script&gt;alert(&#39;Seagull!&#39;)&lt;/script&gt;</h1>"
+sgt.Compile("{{&= tag }}", { tag: "<script>alert('Seagull!')</script>" })
+// => "&lt;script&gt;alert(&#39;Seagull!&#39;)&lt;/script&gt;"
 
 //Compile a file
 sgt.CompileFile("path/to/file/file.html", { name: "Seagull" })
