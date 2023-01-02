@@ -470,9 +470,7 @@ function Segments(htmlSegments, statement, input) {
         let targetObj = {}
         const targetFunc = v => targetObj[v]
 
-        for(let i = 0; i<variables.length; i++) {     
-            
-            const variable = variables[i]
+        for(const variable of variables) {     
             
             if(!(variable in input)) throw new Error(`Variable "${variable}" does not exist`)
             
