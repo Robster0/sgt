@@ -125,13 +125,13 @@ exports.translateScript = function(script, input) {
     let isStringLiteral = false
     let stringDelimiter = null
         
-    for(let i = 0; i<script.length; i++) {
-        if(script[i] === STRINGDELIMITERS[script[i]] && !isStringLiteral) {
+    for(const char of script) {
+        if(char === STRINGDELIMITERS[char] && !isStringLiteral) {
             isStringLiteral = true
 
-            stringDelimiter = script[i]
+            stringDelimiter = char
         }      
-        else if(script[i] === stringDelimiter && isStringLiteral) {
+        else if(char === stringDelimiter && isStringLiteral) {
             isStringLiteral = false
 
             stringDelimiter = null
@@ -139,8 +139,8 @@ exports.translateScript = function(script, input) {
     
         if(isStringLiteral) continue
     
-        if(!script[i].match(/\s|\(|\)|,|!/gms)) {
-            variable += script[i]
+        if(!char.match(/\s|\(|\)|,|!/gms)) {
+            variable += char
     
         } else {
             if(variable in input) {
@@ -159,8 +159,8 @@ exports.translateScript = function(script, input) {
 
     let offset = 0
 
-    for(let i = 0; i<data.length; i++) {
-        const [ newS, newOffset ] = swap(data[i], script, offset)
+    for(const d of data) {
+        const [ newS, newOffset ] = swap(d, script, offset)
 
         script = newS
         offset += newOffset 
@@ -210,8 +210,8 @@ exports.objectPaths = function(obj, path, newInput = {}) {
 
     const keys = Object.keys(obj)
 
-    for(let i = 0; i<keys.length; i++) {
-        let result = exports.objectPaths(obj[keys[i]], path + '.' + keys[i], newInput)
+    for(const key of keys) {
+        let result = exports.objectPaths(obj[key], path + '.' + key, newInput)
 
         if(!result) return false
     }
@@ -230,10 +230,10 @@ exports.resolveIncludePath = function(path, arr) {
         arr.push(exports.getDir(path))
     } else  {
 
-        for(let i = 0; i<arr.length; i++) {
-            if (!fs.existsSync(arr[i]+'/'+path)) continue
+        for(const item of arr) {
+            if (!fs.existsSync(item+'/'+path)) continue
 
-            path = path_node.resolve(arr[i]+'/'+path)
+            path = path_node.resolve(item+'/'+path)
 
             arr.push(exports.getDir(path))
 

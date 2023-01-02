@@ -82,10 +82,10 @@ exports.Compile = function(str, input, der = '') {
 
         const keys = Object.keys(newInput)
 
-        for(let i = 0; i<keys.length; i++) {
-            if(typeof newInput[keys[i]] === 'object' && !Array.isArray(newInput[keys[i]])) {
+        for(const key of keys) {
+            if(typeof newInput[key] === 'object' && !Array.isArray(newInput[key])) {
 
-                const result = objectPaths(newInput[keys[i]], keys[i], newInput)
+                const result = objectPaths(newInput[key], key, newInput)
 
                 if(!result) throw new Error('Duplicate variables are not allowed')
             }         
@@ -104,7 +104,7 @@ exports.Compile = function(str, input, der = '') {
         return output
     }
     catch(err) {
-        console.log(err)
+        console.error(err)
 
         return defaultErrorResponse
     }
@@ -131,7 +131,7 @@ exports.CompileFile = function(path, input, der = '') {
         return exports.Compile(html, input, der)
     }
     catch(err) {
-        console.log(err)
+        console.error(err)
         return der
     }
 }
@@ -312,7 +312,7 @@ function Scan(html, input, stack = [], htmlSegments = {}, startIndex = 0) {
     }
     catch(err) 
     {
-        console.log(err)
+        console.error(err)
         return false
     }   
 }
@@ -349,7 +349,7 @@ function ExecuteStatements(htmlSegments, statement, input) {
         return false
     }
     catch(err) {
-        console.log(err)
+        console.error(err)
         return false
     }
 }
@@ -402,7 +402,7 @@ function Loop(htmlSegments, statement,  [command, variable, as, pipedVariable, i
         return output
     }
     catch(err) {
-        console.log(err)
+        console.error(err)
         return false
     }
 }
@@ -426,7 +426,7 @@ function If(htmlSegments, statement, script, input) {
         }
     }
     catch(err) {
-        console.log(new Error(`Invalid if-statement at "${statement}"`))
+        console.error(new Error(`Invalid if-statement at "${statement}"`))
         return false
     }
     
@@ -445,18 +445,17 @@ function Segments(htmlSegments, statement, input) {
 
         let scopeSegments = Object.keys(htmlSegments)
 
-        for(let i = 0; i<scopeSegments.length; i++) {
+        for(const scopeSegment of scopeSegments) {
 
-            if(scopeSegments[i] === 'content' || scopeSegments[i] === 'else') continue
+            if(scopeSegment === 'content' || scopeSegment === 'else') continue
 
-            const executedStatement = ExecuteStatements(htmlSegments[scopeSegments[i]], scopeSegments[i], input)
+            const executedStatement = ExecuteStatements(htmlSegments[scopeSegment], scopeSegment, input)
 
             if(!executedStatement && executedStatement !== '') return false
 
             segmentIndex++
 
             output += executedStatement + content[segmentIndex]
-
         }
 
         //Cancel early if there are no scope made variables
@@ -471,9 +470,7 @@ function Segments(htmlSegments, statement, input) {
         let targetObj = {}
         const targetFunc = v => targetObj[v]
 
-        for(let i = 0; i<variables.length; i++) {     
-            
-            const variable = variables[i]
+        for(const variable of variables) {     
             
             if(!(variable in input)) throw new Error(`Variable "${variable}" does not exist`)
             
@@ -497,7 +494,7 @@ function Segments(htmlSegments, statement, input) {
         return replace.call(output, new RegExp(rex.slice(0, -1), 'g'), targetFunc)
     }
     catch(err) {
-        console.log(err)
+        console.error(err)
         return false
     }
 }
