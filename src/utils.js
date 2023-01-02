@@ -106,7 +106,7 @@ exports.generateIfStatement = function(script) {
             return false
         }
         catch(err) {
-            console.log(err)
+            console.error(err)
             return err
         }
     `)
@@ -276,7 +276,7 @@ exports.ConvertOutPutTag = function(outputTag, v) {
         return _OUTPUTTAGS_[outputTag].func(v)      
     }
     catch(err) {
-        console.log(err)
+        console.error(err)
         return false
     }
 }

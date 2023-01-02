@@ -104,7 +104,7 @@ exports.Compile = function(str, input, der = '') {
         return output
     }
     catch(err) {
-        console.log(err)
+        console.error(err)
 
         return defaultErrorResponse
     }
@@ -131,7 +131,7 @@ exports.CompileFile = function(path, input, der = '') {
         return exports.Compile(html, input, der)
     }
     catch(err) {
-        console.log(err)
+        console.error(err)
         return der
     }
 }
@@ -312,7 +312,7 @@ function Scan(html, input, stack = [], htmlSegments = {}, startIndex = 0) {
     }
     catch(err) 
     {
-        console.log(err)
+        console.error(err)
         return false
     }   
 }
@@ -349,7 +349,7 @@ function ExecuteStatements(htmlSegments, statement, input) {
         return false
     }
     catch(err) {
-        console.log(err)
+        console.error(err)
         return false
     }
 }
@@ -402,7 +402,7 @@ function Loop(htmlSegments, statement,  [command, variable, as, pipedVariable, i
         return output
     }
     catch(err) {
-        console.log(err)
+        console.error(err)
         return false
     }
 }
@@ -497,7 +497,7 @@ function Segments(htmlSegments, statement, input) {
         return replace.call(output, new RegExp(rex.slice(0, -1), 'g'), targetFunc)
     }
     catch(err) {
-        console.log(err)
+        console.error(err)
         return false
     }
 }
