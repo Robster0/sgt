@@ -35,7 +35,7 @@ exports.Validity = function(statementSeg, statement, input) {
 
         if(isElse) {
             if(statementSeg.length === 1) {
-                return "1 === 1"
+                return "true"
             }
 
             if(statementSeg[1] !== 'if')
