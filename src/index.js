@@ -4,18 +4,6 @@
 
 template engine that heavily focuses on not using "with" statement (even tho it would be faster and easier)
 
-Syntax:
-
-#: statement
-
-/: end the statement
-
-":":  else statement 
-
-% (only on variables): escape
-
-@: trim white space
-
 */
 
 
@@ -41,9 +29,11 @@ exports.title = 'sgt'
 exports.version = require('./package.json').version
 
 const fs = require('fs');
+const { replace } = ''
+
 
 const { Validity, ValidateVariableNames, ValidateScopes } = require('./validity/validity.js')
-const { generateIfStatement, objectPaths, Escape, resolveIncludePath, getDir, _ATTRIBUTES_, _STATEMENT_ } = require('./utils.js');
+const { generateIfStatement, objectPaths, resolveIncludePath, getDir, ConvertOutPutTag, _STATEMENT_ } = require('./utils.js');
 
 let scopeVariables = {}
 let statement_cache = {}
@@ -54,11 +44,11 @@ let defaultErrorResponse
 let relativePaths = []
 
 /**
-* Compiles Seagull templates
+* @public
 * @param {string} str string that will be compiled
 * @param {object} input variables used inside the string
 * @param {string} der (default error response) default output if an error occurs during compiling 
-* @returns {string} compiled output
+* @returns compiled string
 */
 exports.Compile = function(str, input, der = '') {
     try
@@ -121,11 +111,11 @@ exports.Compile = function(str, input, der = '') {
 }
 
 /** 
-* Compiles Seagull templates within a file
+* @public
 * @param {string} path relative or absolute path to the html file
 * @param {object} input variables used inside the html
 * @param {string} der (default error response) default output if an error occurs during compiling 
-* @returns {string} compiled output
+* @returns compiled string
 */
 exports.CompileFile = function(path, input, der = '') {
     try
@@ -174,33 +164,34 @@ function Scan(html, input, stack = [], htmlSegments = {}, startIndex = 0) {
 
                 const statementType = statement[0]
 
+                /**@type {Array | null} */
+                const outputTag = statement.match(/^(--|-=|-%|%|=|__)/)
 
                 const isVariable = !_STATEMENT_[statementType]
-                const hasAttribute = _ATTRIBUTES_[statementType] ? true : false
 
-                if(hasAttribute)
-                    statement = statement.substring(1, statement.length) 
+                if(outputTag)
+                    statement = statement.slice(outputTag[0].length, statement.length) 
 
                 //Get the latest statement from the stack
                 const latest = stack[stack.length - 1]
 
                 //If the statement is a variable and is inside the input variable 
-                if(isVariable && statement in input) {
-
-                    content += hasAttribute ? Attributes(statementType, input[statement]) : input[statement]
-
-                }
+                if(isVariable && statement in input)
+                    content += ConvertOutPutTag(outputTag ? outputTag[0] : '', input[statement])
                 else if(isVariable) { //if the statement is a variable 
 
                     if(stack.length === 0) 
                         throw new Error(`Variable "${statement}" does not exist`)
 
-                    content += `{{${hasAttribute ? statementType : ''}${statement}}}`
+                    content += `{{${outputTag ? outputTag[0] : ''}${statement}}}`
 
                     if(!scopeVariables[latest])
                         scopeVariables[latest] = {}
 
-                    scopeVariables[latest][(hasAttribute ? statementType : '') + statement] = 1
+                    if(!scopeVariables[latest][statement])
+                        scopeVariables[latest][statement] = {} 
+
+                    scopeVariables[latest][statement][outputTag ? outputTag[0] : ''] = true
                 }
 
                 //not inside a scope
@@ -374,7 +365,7 @@ function Loop(htmlSegments, statement,  [command, variable, as, pipedVariable, i
 
         if(pipedVariable[pipedVariable.length - 1] === ',') pipedVariable = pipedVariable.substring(0, pipedVariable.length - 1)
 
-        if(pipedVariable in input || index in input) throw new Error('Duplicate variables are not allowed')
+        if(pipedVariable in input || index in input) throw new Error(`Duplicate variables "${pipedVariable in input ? pipedVariable : index}" are not allowed`)
 
         for(let i = 0; i<data.length; i++) {
 
@@ -470,50 +461,42 @@ function Segments(htmlSegments, statement, input) {
         //Cancel early if there are no scope made variables
         if(!scopeVariables[statement]) return output
 
-        const keys = Object.keys(scopeVariables[statement])
+        /**@type {string[]} */
+        const variables = Object.keys(scopeVariables[statement])
+        
+        //Regex (cat)
+        let rex = ''
 
-        for(let name of keys) {
-            const attribute = name[0]
+        let targetObj = {}
+        const targetFunc = v => targetObj[v]
 
-            const hasAttribute = attribute === '%' || attribute === '@'
+        for(let i = 0; i<variables.length; i++) {     
+            
+            const variable = variables[i]
+            
+            if(!(variable in input)) throw new Error(`Variable "${variable}" does not exist`)
+            
+            const outputTags = Object.keys(scopeVariables[statement][variable])
 
+            for(let j = 0; j<outputTags.length; j++) {
 
-            if(!hasAttribute) {
-                if(!(name in input)) throw new Error(`Variable "${name}" does not exist`)
+                const outputTag = outputTags[j]
 
-                output = output.replace(new RegExp(`{{${name}}}`, 'g'), input[name])
-            } 
-            else if(hasAttribute) {
+                rex += `{{${outputTag}${variable}}}` + '|'
 
-                name = name.slice(1)
+                const newOutput = ConvertOutPutTag(outputTag, input[variable])
 
-                if(!(name in input)) throw new Error(`Variable "${name}" does not exist`)
+                if(!newOutput) return false
 
-                const newValue = Attributes(attribute, input[name])
-
-                if(!newValue) throw new Error(`${_ATTRIBUTES_[attribute]} attribute can only be used on strings, "${name}" is not a string`)
-
-                output = output.replace(new RegExp(`{{${attribute}${name}}}`, 'g'), newValue)
-            } 
+                targetObj[`{{${outputTag}${variable}}}`] = newOutput                    
+            }
         }
 
-        return output
+        //Replace all the variables at the same time which removes the possibility of a variable output being replaced
+        return replace.call(output, new RegExp(rex.slice(0, -1), 'g'), targetFunc)
     }
     catch(err) {
         console.error(err)
         return false
-    }
-}
-
-function Attributes(attribute, s) {
-
-    if(typeof s !== 'string')
-        return false
-     
-    switch(attribute) {
-        case '%':
-            return Escape(s)
-        case '@':
-            return s.trim()
     }
 }

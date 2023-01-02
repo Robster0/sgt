@@ -11,7 +11,7 @@
     <div class="wrapper">
         {{ #loop posts as post }}
             <div class="post">
-                <h1 class="post-user">{{ post.user }}</h1> 
+                <h1 class="post-user">{{ -%post.user }}</h1> <!-- Add the -% signs to make the first character upper case --> 
                 <textarea>{{ post.content }}</textarea>
                 <p>ID: {{ post.id }}</p>
 

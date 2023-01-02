@@ -4,11 +4,17 @@ const path_node = require('path')
 const fs = require('fs')
 
 /** 
-* @type {object} list of all the variable attribute and their name
+* @type {object} list of all the variable output tags and their name
 */
-exports._ATTRIBUTES_ = {
-    '%': 'Escape',
-    '@': 'Trim'
+const _OUTPUTTAGS_ = {
+    '-=': { desc: 'Escape', func: Escape },
+    '--': { desc: 'Unescape', func: Unescape },
+    '=': { desc: 'Trim', func: (s) => s.trim() },
+
+    '%': { desc: 'Upper Case', func: (s) => s.toUpperCase() },
+    '__': { desc: 'Lower Case', func: (s) => s.toLowerCase() },
+
+    '-%': { desc: 'First char upper case', func: FirstCharUpperCase },
 }
 
 exports._STATEMENT_ = {
@@ -59,6 +65,29 @@ const STRINGDELIMITERS = {
     '`': '`',
     '"': '"',
     "'": "'"
+}
+
+const escapeTargets = {
+    '>': '&gt;',
+    '<': '&lt;',
+
+    '&': '&amp;',
+
+    "'": '&#39;',
+    '"': '&quot;'
+};
+
+const unescapeTargets = {
+    '&#60;': '<',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&#62;': '>',
+    '&apos;': "'",
+    '&#39;': "'",
+    '&#34;': '"',
+    '&quot;': '"',
+    '&#38;': '&',
+    '&amp;': '&'
 }
 
 
@@ -191,30 +220,6 @@ exports.objectPaths = function(obj, path, newInput = {}) {
     return newInput
 }
 /**
-* @param {string} s 
-* @returns escaped string 
-*/
-exports.Escape = function(s) {
-
-    const targets = {
-        '>': '&gt;',
-        '<': '&lt;',
-
-        '&': '&amp;',
-
-        "'": '&#39;',
-        '"': '&quot;'
-    };
-
-    let escaped = ``
-
-    for(const ch of s) 
-        escaped += targets[ch] ? targets[ch] : ch  
-
-
-    return escaped
-}
-/**
 * resolve path
 * @param {string} path 
 * @param {string[]} arr 
@@ -251,4 +256,90 @@ exports.getDir = function(path) {
     }
 
     return ''
+}
+
+exports.ConvertOutPutTag = function(outputTag, v) {
+    try
+    {
+        if(typeof v === 'object')
+            v = JSON.stringify(v)
+
+        if(outputTag === '') return v
+
+        const tag = _OUTPUTTAGS_[outputTag]
+ 
+
+        if(typeof v !== 'string') 
+            throw new Error(`${tag.desc} output tag can only be used on strings, "${variable}" is not a string`)
+
+
+        return _OUTPUTTAGS_[outputTag].func(v)      
+    }
+    catch(err) {
+        console.log(err)
+        return false
+    }
+}
+
+
+
+/**
+* @param {string} s 
+* @returns escaped string 
+*/
+function Escape(s)  {
+
+    let escaped = ``
+
+    for(let i = 0; i<s.length; i++) 
+        escaped += escapeTargets[s[i]] ? escapeTargets[s[i]] : s[i]  
+
+
+    return escaped
+}
+/**
+* @param {string} s 
+* @returns Unescaped string
+*/
+function Unescape(s) {
+    
+    let output = ''
+    let escapedSeg = ''
+
+    let hasEscapedSeg = false
+
+    for(let i = 0; i<s.length; i++) {
+        if(s[i] === '&') {
+            if(hasEscapedSeg)
+                output += escapedSeg
+
+            hasEscapedSeg = hasEscapedSeg ? false : true         
+            
+            escapedSeg = ''
+        }
+            
+        if(hasEscapedSeg)
+            escapedSeg += s[i]
+        else 
+            output += s[i] 
+
+        if(s[i] === ';' || i === s.length - 1) {
+            hasEscapedSeg = false
+
+            if(unescapeTargets[escapedSeg])
+                output += unescapeTargets[escapedSeg]
+            else 
+                output += escapedSeg
+
+            escapedSeg = ''
+        }
+    }
+
+    return output
+}
+/**
+* @param {string} s  
+*/
+function FirstCharUpperCase(s) {
+    return s[0].toUpperCase() + s.slice(1, s.length)
 }
