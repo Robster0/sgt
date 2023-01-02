@@ -1,6 +1,6 @@
 {
     "dependencies": {
-      "muxjs-http": "^1.0.8",
+      "muxjs-http": "^1.0.9",
       "sgt": "^1.0.8"
     }
 }
