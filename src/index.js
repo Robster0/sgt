@@ -2,7 +2,7 @@
 
 /*
 
-template engine that heavily focuses on not using "with" statement (even tho it would be faster and easier)
+template engine that heavily focuses on not using the "with" statement (even tho it would be faster and easier)
 
 */
 
@@ -82,10 +82,10 @@ exports.Compile = function(str, input, der = '') {
 
         const keys = Object.keys(newInput)
 
-        for(let i = 0; i<keys.length; i++) {
-            if(typeof newInput[keys[i]] === 'object' && !Array.isArray(newInput[keys[i]])) {
+        for(const key of keys) {
+            if(typeof newInput[key] === 'object' && !Array.isArray(newInput[key])) {
 
-                const result = objectPaths(newInput[keys[i]], keys[i], newInput)
+                const result = objectPaths(newInput[key], key, newInput)
 
                 if(!result) throw new Error('Duplicate variables are not allowed')
             }         
@@ -97,8 +97,8 @@ exports.Compile = function(str, input, der = '') {
         
         relativePaths = []
         
-        //If error
-        if(!output) return defaultErrorResponse
+        //needs to be strict
+        if(output === false) return defaultErrorResponse
 
 
         return output
@@ -175,10 +175,9 @@ function Scan(html, input, stack = [], htmlSegments = {}, startIndex = 0) {
                 //Get the latest statement from the stack
                 const latest = stack[stack.length - 1]
 
-                //If the statement is a variable and is inside the input variable 
                 if(isVariable && statement in input)
                     content += ConvertOutPutTag(outputTag ? outputTag[0] : '', input[statement])
-                else if(isVariable) { //if the statement is a variable 
+                else if(isVariable) {
 
                     if(stack.length === 0) 
                         throw new Error(`Variable "${statement}" does not exist`)
@@ -205,10 +204,7 @@ function Scan(html, input, stack = [], htmlSegments = {}, startIndex = 0) {
 
                     htmlSegments['content'][htmlSegments['content'].length - 1] += content    
                 }
-                
-                    
-
-                    
+                       
                 //If its a statement
                 if(statementType === '#' || statementType === ':') {
 
@@ -261,7 +257,7 @@ function Scan(html, input, stack = [], htmlSegments = {}, startIndex = 0) {
                         
                         const result = ExecuteStatements(htmlSegments, latest, input)
                         
-                        if(!result && result?.length !== 0) return false
+                        if(result === false) return false
 
                         output += result
                         htmlSegments = {}   
@@ -275,7 +271,7 @@ function Scan(html, input, stack = [], htmlSegments = {}, startIndex = 0) {
                     const result = statement.match(/(\+include(\s+))(('(.+?)')|("(.+?)")|(`(.+?)`))/)
 
                     if(!result) 
-                        throw new SyntaxError(`include statement " ${statement} " has the wrong format, the correct format is: " +include 'some/path/file.html' "`)
+                        throw new SyntaxError(`include statement " ${statement} " has the wrong format, the correct format is: " +include 'path/to/file/file.html' "`)
 
                     let path = result.filter(e => e)[5]
 
@@ -324,24 +320,19 @@ function ExecuteStatements(htmlSegments, statement, input) {
     {
         const statementSeg = statement.split('-DUPLICATE-')[0].split(/\s+/g).filter(e => e)
 
-        let value
 
         if(!statement_cache[statement]) {
+            let script = Validity(statementSeg, statement, input)
 
-            value = Validity(statementSeg, statement, input)
+            if(!script) return false
 
-            if(!value) return false
-
-            statement_cache[statement] = value
-        
-        }
-        else 
-            value = statement_cache[statement]       
+            statement_cache[statement] = script  
+        }    
             
         switch(statementSeg[0].toLowerCase()) {
             case '#if':
             case ':else':
-                return If(htmlSegments, statement, value, input)
+                return If(htmlSegments, statement, statement_cache[statement], input)
             case '#loop':
                 return Loop(htmlSegments, statement, statementSeg, input)
         }
@@ -365,7 +356,8 @@ function Loop(htmlSegments, statement,  [command, variable, as, pipedVariable, i
 
         if(pipedVariable[pipedVariable.length - 1] === ',') pipedVariable = pipedVariable.substring(0, pipedVariable.length - 1)
 
-        if(pipedVariable in input || index in input) throw new Error(`Duplicate variables "${pipedVariable in input ? pipedVariable : index}" are not allowed`)
+        if(pipedVariable in input || index in input) 
+            throw new Error(`Duplicate variables "${pipedVariable in input ? pipedVariable : index}" are not allowed`)
 
         for(let i = 0; i<data.length; i++) {
 
@@ -373,24 +365,25 @@ function Loop(htmlSegments, statement,  [command, variable, as, pipedVariable, i
             
             if(isObject) {
 
-                let nodes = objectPaths(data[i], pipedVariable)
+                let paths = objectPaths(data[i], pipedVariable)
 
-                if(!nodes) throw new Error('Duplicate variables are not allowed')
-
-                input = {...input, ...nodes}
+                input = {...input, ...paths}
             }
                             
             input[pipedVariable] = data[i]
 
-            if(index) input[index] = i
+            if(index) 
+                input[index] = i
 
-            const result = ValidateVariableNames(input)
 
-            if(result) throw new SyntaxError(result)
+
+            const error = ValidateVariableNames(input)
+
+            if(error) throw new SyntaxError(error)
 
             const scannedHtml = Segments(htmlSegments, statement, input)
 
-            if(!scannedHtml && scannedHtml !== '') return false
+            if(scannedHtml === false) return false
 
             //Delete this variable since shallow copy won't
             delete input[pipedVariable]
@@ -426,7 +419,7 @@ function If(htmlSegments, statement, script, input) {
         }
     }
     catch(err) {
-        console.log(new Error(`Invalid if-statement at "${statement}"`))
+        console.error(new Error(`Invalid if-statement at "${statement}"`))
         return false
     }
     
@@ -445,13 +438,13 @@ function Segments(htmlSegments, statement, input) {
 
         let scopeSegments = Object.keys(htmlSegments)
 
-        for(let i = 0; i<scopeSegments.length; i++) {
+        for(const scopeSegment of scopeSegments) {
 
-            if(scopeSegments[i] === 'content' || scopeSegments[i] === 'else') continue
+            if(scopeSegment === 'content' || scopeSegment === 'else') continue
 
-            const executedStatement = ExecuteStatements(htmlSegments[scopeSegments[i]], scopeSegments[i], input)
+            const executedStatement = ExecuteStatements(htmlSegments[scopeSegment], scopeSegment, input)
 
-            if(!executedStatement && executedStatement !== '') return false
+            if(executedStatement === false) return false
 
             segmentIndex++
 
@@ -471,23 +464,20 @@ function Segments(htmlSegments, statement, input) {
         let targetObj = {}
         const targetFunc = v => targetObj[v]
 
-        for(let i = 0; i<variables.length; i++) {     
-            
-            const variable = variables[i]
-            
+        for(const variable of variables) {     
+                   
             if(!(variable in input)) throw new Error(`Variable "${variable}" does not exist`)
             
             const outputTags = Object.keys(scopeVariables[statement][variable])
 
-            for(let j = 0; j<outputTags.length; j++) {
-
-                const outputTag = outputTags[j]
+            for(const outputTag of outputTags) {
 
                 rex += `{{${outputTag}${variable}}}` + '|'
 
                 const newOutput = ConvertOutPutTag(outputTag, input[variable])
 
-                if(!newOutput) return false
+                //Needs to be strict checked because value can be zero
+                if(newOutput === false) return false
 
                 targetObj[`{{${outputTag}${variable}}}`] = newOutput                    
             }

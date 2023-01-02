@@ -1,5 +1,5 @@
 const home_input = {
-    user: { name: "Robster0", admin: true },
+    user: { name: "user", admin: true },
     LoggedIn: true,
 
     links: [

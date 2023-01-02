@@ -26,7 +26,7 @@ const sgt = require("sgt")
 sgt.Compile("<h1>{{ name }}</h1>", { name: "Seagull" })
 // => "<h1>Seagull</h1>"
 
-//Output tags
+//Output tag example
 sgt.Compile("<h1>{{ -=tag }}</h1>", { tag: "<script>alert('Seagull!')</script>" })
 // => "<h1>&lt;script&gt;alert(&#39;Seagull!&#39;)&lt;/script&gt;</h1>"
 
@@ -40,4 +40,14 @@ $ npm install sgt
 ```
 
 # Example
-https://github.com/Robster0/sgt/tree/main/example
+
+Confused? Test and view the example, clone the sgt repo and install the dependencies:
+
+```
+ $ git clone https://github.com/robin-andreasson/sgt
+ $ cd sgt
+ $ git sparse-checkout set example
+ $ cd example
+ $ npm install
+ $ node index
+```

@@ -210,11 +210,8 @@ exports.objectPaths = function(obj, path, newInput = {}) {
 
     const keys = Object.keys(obj)
 
-    for(let i = 0; i<keys.length; i++) {
-        let result = exports.objectPaths(obj[keys[i]], path + '.' + keys[i], newInput)
-
-        if(!result) return false
-    }
+    for(const key of keys)
+        exports.objectPaths(obj[key], path + '.' + key, newInput)
 
 
     return newInput
