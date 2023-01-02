@@ -66,10 +66,9 @@ exports.ValidateVariableNames = function(input) {
     const keys = Object.keys(input)
 
     for(let i = 0; i<keys.length; i++) {
-        if(keys[i].match(/#|:|\/|\s|\(|\)|,|-=|--|-%|%|__|=|-DUPLICATE-/gm))
-            return `framework exclusive keywords are\r\n ['#'  '/'  ':'  '-='  '--' '-%' '%' '__' '=' ' '  ','  '('  ')'  '-DUPLICATE-' ],\r\n these are not allowed in variable names ( ${keys[i]} )`
-    }
-        
+        if(keys[i].match(/@~|#|:|\/|\s|\(|\)|,|&=|&-|%-|@=|@-|@|-DUPLICATE-/gm))
+            return `framework exclusive keywords are\r\n ['#'  '/'  ':'  '&='  '&-' '%-' '@=' '@-' '@' '@~' ' '  ','  '('  ')'  '-DUPLICATE-' ],\r\n these are not allowed in variable names ( ${keys[i]} )`
+    }  
 
     return null
             

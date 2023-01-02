@@ -11,7 +11,7 @@
     <header>
         {{ #if LoggedIn }} <!-- if statement -->
             <div class="Segment">
-                <h1>Hi {{ -%user.name }}!</h1> <!-- make the first character in user.name upper case -->
+                <h1>Hi {{@ user.name }}!</h1> <!-- Capitalize the string with the @ tag -->
             </div>
             <div class='Segment'>
                 {{ #loop links as l, index }} <!-- loop statement  -->

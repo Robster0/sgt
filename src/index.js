@@ -1,11 +1,16 @@
+//!                                                                             !\\
+//*  │‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾│  *\\
+//*  │                                                                       │  *\\
+//*  │                      For more information visit:                      │  *\\
+//*  │                                                                       │  *\\
+//*  │                   https://www.npmjs.com/package/sgt                   │  *\\ 
+//*  │                https://github.com/robin-andreasson/sgt                │  *\\
+//*  │                                                                       │  *\\
+//*  │_______________________________________________________________________│  *\\
+//!                                                                             !\\
+
 "use strict"
-
-/*
-
-template engine that heavily focuses on not using the "with" statement (even tho it would be faster and easier)
-
-*/
-
+//template engine that heavily focuses on not using the "with" statement (even tho it would be faster and easier)
 
 /**
 * Seagull templates.
@@ -155,22 +160,21 @@ function Scan(html, input, stack = [], htmlSegments = {}, startIndex = 0) {
                 mode = 'scan'
                 i++
 
-                //Offset for else statements, its a stupid solution to a problem (I should start the process of refactoring this (I won't))
+                //Offset, its a stupid solution to a problem (I should start the process of refactoring this (I won't))
                 const offset = statement.length + 4
+
+                /**@type {Array | null} */
+                const outputTag = statement.match(/^(@~|&=|&-|%-|@=|@-|@)/)
+    
+                if(outputTag)
+                    statement = statement.slice(outputTag[0].length, statement.length)
 
                 //Trim the white space from the outer sides of the statement 
                 if(statement) statement = statement.trim()
 
 
                 const statementType = statement[0]
-
-                /**@type {Array | null} */
-                const outputTag = statement.match(/^(--|-=|-%|%|=|__)/)
-
                 const isVariable = !_STATEMENT_[statementType]
-
-                if(outputTag)
-                    statement = statement.slice(outputTag[0].length, statement.length) 
 
                 //Get the latest statement from the stack
                 const latest = stack[stack.length - 1]

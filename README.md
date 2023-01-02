@@ -10,12 +10,13 @@ An easy-to-use template engine
 
 
 # Output tags
-* Escape with -=
-* Unescape with --
-* Trim whitespace with =
-* Upper case with %
-* Lower case with __
-* First char upper case with -%
+* Escape with &=
+* Unescape with &-
+* Trim whitespace with %-
+* Upper case with @=
+* Lower case with @-
+* Capitalize output with @
+* Capitalize every word with @~
 
 # Code example
 
@@ -26,8 +27,8 @@ const sgt = require("sgt")
 sgt.Compile("<h1>{{ name }}</h1>", { name: "Seagull" })
 // => "<h1>Seagull</h1>"
 
-//Output tag example
-sgt.Compile("<h1>{{ -=tag }}</h1>", { tag: "<script>alert('Seagull!')</script>" })
+//Output tag "&=" like mentioned above escapes the output
+sgt.Compile("<h1>{{&= tag }}</h1>", { tag: "<script>alert('Seagull!')</script>" })
 // => "<h1>&lt;script&gt;alert(&#39;Seagull!&#39;)&lt;/script&gt;</h1>"
 
 //Compile a file

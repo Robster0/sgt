@@ -2,8 +2,8 @@
     {{ #loop comments as comment }}
         {{ #if comment.postId eq post.id }}
             <div class="comment">
-                <h1 class="comment-content">{{ =comment.user }}</h1> <!-- add the equal sign to trim the output  -->
-                <p>{{ -=comment.content }}</p> <!-- add the -= signs to escape the output -->
+                <h1 class="comment-content">{{ comment.user }}</h1>
+                <p>{{@~ comment.content }}</p> <!-- add the @~ tag to capitalize every word -->
     
                 <div class="comment-info">
                     <p>Comment ID: {{ comment.id }}</p>

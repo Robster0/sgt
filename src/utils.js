@@ -7,14 +7,15 @@ const fs = require('fs')
 * @type {object} list of all the variable output tags and their name
 */
 const _OUTPUTTAGS_ = {
-    '-=': { desc: 'Escape', func: Escape },
-    '--': { desc: 'Unescape', func: Unescape },
-    '=': { desc: 'Trim', func: (s) => s.trim() },
+    '&=': { desc: 'Escape', func: Escape },
+    '&-': { desc: 'Unescape', func: Unescape },
+    '%-': { desc: 'Trim', func: (s) => s.trim() },
 
-    '%': { desc: 'Upper Case', func: (s) => s.toUpperCase() },
-    '__': { desc: 'Lower Case', func: (s) => s.toLowerCase() },
+    '@=': { desc: 'Upper Case', func: (s) => s.toUpperCase() },
+    '@-': { desc: 'Lower Case', func: (s) => s.toLowerCase() },
 
-    '-%': { desc: 'First char upper case', func: FirstCharUpperCase },
+    '@': { desc: 'Capitalize', func: CapitalizeWord },
+    '@~': { desc: 'Capitalize words', func: CapitalizeWords }
 }
 
 exports._STATEMENT_ = {
@@ -267,7 +268,7 @@ exports.ConvertOutPutTag = function(outputTag, v) {
  
 
         if(typeof v !== 'string') 
-            throw new Error(`${tag.desc} output tag can only be used on strings, "${variable}" is not a string`)
+            throw new Error(`"${tag.desc}" output tag can only be used on strings, "${variable}" is not a string`)
 
 
         return _OUTPUTTAGS_[outputTag].func(v)      
@@ -337,6 +338,26 @@ function Unescape(s) {
 /**
 * @param {string} s  
 */
-function FirstCharUpperCase(s) {
+function CapitalizeWord(s) {
     return s[0].toUpperCase() + s.slice(1, s.length)
+}
+/**
+* Capitalizes every word (this function is still limited and new so some words may not be capitalized)
+* @param {string} s 
+* @returns 
+*/
+function CapitalizeWords(s) {
+    let output = ''
+    let isInitial = true
+
+    for(let i = 0; i<s.length; i++) {
+        if(isInitial && !s[i + 1].match(/\s|\?|!|,|`|'|"|\(|\)|\{|\}|\[|\]|-|\+|\*|\/|\\/g))
+            output += s[i].toUpperCase()
+        else 
+            output += s[i]
+    
+        isInitial = !s[i].match(/\s|\.|\?|!|,|`|'|"|\(|\)|\{|\}|\[|\]|-|\+|\*|\/|\\/g) ? false : true
+    }
+
+    return output
 }

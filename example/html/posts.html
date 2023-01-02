@@ -11,8 +11,8 @@
     <div class="wrapper">
         {{ #loop posts as post }}
             <div class="post">
-                <h1 class="post-user">{{ -%post.user }}</h1> <!-- Add the -% signs to make the first character upper case --> 
-                <textarea>{{ post.content }}</textarea>
+                <h1 class="post-user">{{@ post.user }}</h1>
+                <p>{{&= post.content }}</p> <!-- add the &= tag to escape the output -->
                 <p>ID: {{ post.id }}</p>
 
             </div>
