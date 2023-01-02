@@ -51,7 +51,7 @@ exports.Validity = function(statementSeg, statement, input) {
         return translateScript(statement.slice(index + iftype.length, statement.length) + ' ', input)
     }
     catch(err) {
-        console.log(err)
+        console.error(err)
         return false
     }
 }
