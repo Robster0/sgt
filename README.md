@@ -1,4 +1,4 @@
-# {{ Seagull Templates }}
+# {Seagull Templates}
 
 An easy-to-use template engine
 
