@@ -17,6 +17,7 @@ An easy-to-use template engine
 * Lower case with __
 * First char upper case with -%
 
+# Code example
 
 ```js
 const sgt = require("sgt")
