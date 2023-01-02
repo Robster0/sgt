@@ -12,7 +12,7 @@ MuxJS.ListenAndServe(3000, (err) => {
 })
 
 
-MuxJS.FileServer(__dirname + '/static')
+MuxJS.FileServer('static')
 
 
 const r = MuxJS.NewRouter()
